@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -1442,15 +1441,18 @@ async function runSymptomChecker(){
   setBtn('sym-btn',true,'');
   document.getElementById('sym-result').innerHTML='<div style="text-align:center;padding:1.5rem;font-size:14px;color:#888"><span class="spinner-dark spinner"></span> Analysing symptoms with AI...</div>';
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    const resp=await fetch('/api/symptom',{
       method:'POST',
-      headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:`You are a medical AI assistant. Patient symptoms: ${symptoms.join(', ')}. Severity: ${selectedSeverity}. Duration: ${document.getElementById('sym-duration').value} days. Respond ONLY with valid JSON, no markdown: {"conditions":[{"name":"string","likelihood":"low or medium or high","description":"1-2 sentences","recommendation":"brief advice"}],"specialty":"recommended specialist","urgent":true or false}`}]})
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        symptoms,
+        severity:selectedSeverity,
+        duration:document.getElementById('sym-duration').value
+      })
     });
     const data=await resp.json();
-    if(!data.content||!data.content[0])throw new Error('No response');
-    let text=data.content[0].text.replace(/```json|```/g,'').trim();
-    const result=JSON.parse(text);
+    if(data.error)throw new Error(data.error);
+    const result=data;
     let html='';
     if(result.urgent)html+='<div class="alert alert-danger"><i class="ti ti-alert-triangle"></i> These symptoms may need urgent attention. Please visit a doctor or emergency room immediately.</div>';
     result.conditions.forEach(c=>{
