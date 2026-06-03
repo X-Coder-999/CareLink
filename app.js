@@ -449,15 +449,23 @@ async function adminLogin(){
   const hash=await sha256(document.getElementById('admin-pass').value);
   if(hash===ADMIN_PASS_HASH){
     document.getElementById('admin-err').style.display='none';
+    saveSession('admin-token', {id: 'admin', email: 'admin@carelink.com'}, 'admin');
     pageHistory.push('s-admin-dash');
     _showScreen('s-admin-dash');
     loadAdminData();
+    startSessionTimer();
   } else {
     document.getElementById('admin-err').style.display='flex';
   }
 }
 
-function signOutAdmin(){pageHistory=['s-home'];go('s-home');}
+function signOutAdmin(){
+  clearSession();
+  currentUser=null;currentToken=null;
+  pageHistory=['s-home'];
+  go('s-home');
+  showToast('Signed out successfully.');
+}
 
 async function loadAdminData(){
   const [patients,doctors]=await Promise.all([
