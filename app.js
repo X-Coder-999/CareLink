@@ -903,7 +903,8 @@ async function savePatientProfile(){
     allergies:document.getElementById('pp-allergies')?.value||'',
     medical_history:document.getElementById('pp-history')?.value||'',
     emergency_contact:document.getElementById('pp-ec-name')?.value||'',
-    emergency_phone:document.getElementById('pp-ec-phone')?.value||''
+    emergency_phone:document.getElementById('pp-ec-phone')?.value||'',
+    avatar_url:document.getElementById('pp-avatar')?.value||''
   };
   await api(`/patients?id=eq.${currentUser.id}`,{method:'PATCH',body:JSON.stringify(data)});
   showToast('Profile updated!');
@@ -914,11 +915,18 @@ async function loadPatientProfile(){
   if(!currentUser)return;
   const res=await api(`/patients?id=eq.${currentUser.id}&select=*`);
   const p=res[0];if(!p)return;
-  const m={phone:'pp-phone',gender:'pp-gender',blood_group:'pp-blood',weight_kg:'pp-weight',height_cm:'pp-height',allergies:'pp-allergies',medical_history:'pp-history',emergency_contact:'pp-ec-name',emergency_phone:'pp-ec-phone'};
+  const m={phone:'pp-phone',gender:'pp-gender',blood_group:'pp-blood',weight_kg:'pp-weight',height_cm:'pp-height',allergies:'pp-allergies',medical_history:'pp-history',emergency_contact:'pp-ec-name',emergency_phone:'pp-ec-phone',avatar_url:'pp-avatar'};
   const av=document.getElementById('p-profile-avatar');
   const nd=document.getElementById('p-profile-name-display');
   const ed=document.getElementById('p-profile-email-display');
-  if(av)av.textContent=p.full_name?p.full_name.split(' ').map(w=>w[0]).join('').slice(0,2):'--';
+  
+  if(av) {
+    if(p.avatar_url) {
+      av.innerHTML = `<img src="${sanitize(p.avatar_url)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;
+    } else {
+      av.textContent=p.full_name?p.full_name.split(' ').map(w=>w[0]).join('').slice(0,2):'--';
+    }
+  }
   if(nd)nd.textContent=p.full_name||'--';
   if(ed)ed.textContent=p.email||'--';
   Object.entries(m).forEach(([k,id])=>{const el=document.getElementById(id);if(el&&p[k])el.value=p[k];});
@@ -1083,10 +1091,19 @@ async function drawMindMap() {
   
   const avatarEl = document.getElementById('mc-avatar');
   const nameEl = document.getElementById('mc-name');
-  if(avatarEl && nameEl && currentUser.user_metadata) {
-    const fn = currentUser.user_metadata.full_name || 'Patient';
-    nameEl.textContent = fn.split(' ')[0];
-    avatarEl.textContent = fn.split(' ').map(w=>w[0]).join('').slice(0,2);
+  if(avatarEl && nameEl) {
+    try {
+      const pRes = await api(`/patients?id=eq.${currentUser.id}&select=full_name,avatar_url`);
+      if(pRes && pRes[0]) {
+        const fn = pRes[0].full_name || 'Patient';
+        nameEl.textContent = fn.split(' ')[0];
+        if(pRes[0].avatar_url) {
+          avatarEl.innerHTML = `<img src="${sanitize(pRes[0].avatar_url)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;
+        } else {
+          avatarEl.textContent = fn.split(' ').map(w=>w[0]).join('').slice(0,2);
+        }
+      }
+    } catch(e){}
   }
   
   // Custom fetch to get exact count directly from PostgREST headers since our standard API wrapper expects JSON body
