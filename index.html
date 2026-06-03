@@ -179,38 +179,58 @@
     <p style="font-size:13px;color:#888">Welcome back,</p>
     <p style="font-size:22px;font-weight:700" id="p-dash-name">...</p>
   </div>
-  <div class="dash-grid">
-    <div class="dash-card" onclick="pTab('specialties')">
-      <div class="dc-icon" style="background:linear-gradient(135deg,#E1F5EE,#c8f0e4)"><i class="ti ti-building-hospital" style="color:var(--teal);font-size:22px"></i></div>
-      <div class="dc-label">Specialty Rooms</div><div class="dc-sub">Browse by doctor type</div>
+
+  <!-- MIND MAP -->
+  <div class="mindmap-container" id="mindmap-container">
+    <svg class="mindmap-svg" id="mindmap-svg"></svg>
+    <div class="mindmap-center" onclick="pTab('profile')" id="mindmap-center">
+      <div class="mc-avatar" id="mc-avatar">?</div>
+      <div class="mc-name" id="mc-name">You</div>
     </div>
-    <div class="dash-card" onclick="pTab('nearby')">
-      <div class="dc-icon" style="background:linear-gradient(135deg,#E6F1FB,#d0e8ff)"><i class="ti ti-map-pin" style="color:var(--blue);font-size:22px"></i></div>
-      <div class="dc-label">Nearby Doctors</div><div class="dc-sub">Find close to you</div>
+    <div class="mindmap-node node-top" onclick="pTab('symptom')">
+      <div class="mn-bubble" style="background:linear-gradient(135deg,#FCEBEB,#ffd8d8);color:var(--coral)"><i class="ti ti-brain"></i></div>
+      <div class="mn-label">Symptom Checker</div>
+      <div class="mn-sub">AI Analysis</div>
     </div>
-    <div class="dash-card" onclick="pTab('requests')">
-      <div class="dc-icon" style="background:linear-gradient(135deg,#EEEDFE,#d8d4ff)"><i class="ti ti-calendar-check" style="color:var(--purple);font-size:22px"></i></div>
-      <div class="dc-label">My Requests</div><div class="dc-sub">Track appointment status</div>
+    <div class="mindmap-node node-right" onclick="pTab('specialists')">
+      <div class="mn-bubble" style="background:linear-gradient(135deg,#EEEDFE,#d8d4ff);color:var(--purple)"><i class="ti ti-stethoscope"></i></div>
+      <div class="mn-label">My Specialists</div>
+      <div class="mn-sub" id="mm-follow-count">0 following</div>
     </div>
-    <div class="dash-card" onclick="pTab('messages')">
-      <div class="dc-icon" style="background:linear-gradient(135deg,#FAEEDA,#ffe8b0)"><i class="ti ti-message-circle" style="color:var(--amber);font-size:22px"></i></div>
-      <div class="dc-label">Messages</div><div class="dc-sub">Chat with doctor</div>
+    <div class="mindmap-node node-bottom" onclick="pTab('records')">
+      <div class="mn-bubble" style="background:linear-gradient(135deg,#EAF3DE,#d4edbc);color:var(--green)"><i class="ti ti-file-medical"></i></div>
+      <div class="mn-label">Medical History</div>
+      <div class="mn-sub">Records & Reports</div>
     </div>
-    <div class="dash-card" onclick="pTab('symptom')">
-      <div class="dc-icon" style="background:linear-gradient(135deg,#FCEBEB,#ffd8d8)"><i class="ti ti-brain" style="color:var(--coral);font-size:22px"></i></div>
-      <div class="dc-label">Symptom Checker</div><div class="dc-sub">AI-powered analysis</div>
-    </div>
-    <div class="dash-card" onclick="pTab('records')">
-      <div class="dc-icon" style="background:linear-gradient(135deg,#EAF3DE,#d4edbc)"><i class="ti ti-file-medical" style="color:var(--green);font-size:22px"></i></div>
-      <div class="dc-label">Health Records</div><div class="dc-sub">Files and prescriptions</div>
+    <div class="mindmap-node node-left" onclick="pTab('search')">
+      <div class="mn-bubble" style="background:linear-gradient(135deg,#E6F1FB,#d0e8ff);color:var(--blue)"><i class="ti ti-search"></i></div>
+      <div class="mn-label">Find Doctor</div>
+      <div class="mn-sub">Search & Follow</div>
     </div>
   </div>
+
+  <!-- Quick Actions -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:0 18px 18px">
+    <div class="dash-card" style="padding:14px;text-align:center" onclick="pTab('requests')">
+      <i class="ti ti-calendar-check" style="font-size:22px;color:var(--purple)"></i>
+      <div class="dc-label" style="font-size:12px;margin-top:6px">Requests</div>
+    </div>
+    <div class="dash-card" style="padding:14px;text-align:center" onclick="pTab('messages')">
+      <i class="ti ti-message-circle" style="font-size:22px;color:var(--amber)"></i>
+      <div class="dc-label" style="font-size:12px;margin-top:6px">Messages</div>
+    </div>
+    <div class="dash-card" style="padding:14px;text-align:center" onclick="pTab('nearby')">
+      <i class="ti ti-map-pin" style="font-size:22px;color:var(--blue)"></i>
+      <div class="dc-label" style="font-size:12px;margin-top:6px">Nearby</div>
+    </div>
+  </div>
+
   <div class="bottom-nav">
     <div class="bn-item active" onclick="pTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
-    <div class="bn-item" onclick="pTab('specialties')"><i class="ti ti-building-hospital"></i><span>Rooms</span></div>
-    <div class="bn-item" onclick="pTab('symptom')"><i class="ti ti-brain"></i><span>Symptoms</span></div>
+    <div class="bn-item" onclick="pTab('search')"><i class="ti ti-search"></i><span>Search</span></div>
+    <div class="bn-item" onclick="pTab('specialists')"><i class="ti ti-stethoscope"></i><span>Following</span></div>
     <div class="bn-item" onclick="pTab('messages')"><i class="ti ti-message-circle"></i><span>Messages</span><div class="bn-badge" id="p-msg-badge"></div></div>
-    <div class="bn-item" onclick="pTab('records')"><i class="ti ti-file-medical"></i><span>Records</span></div>
+    <div class="bn-item" onclick="pTab('profile')"><i class="ti ti-user-circle"></i><span>Profile</span></div>
   </div>
 </div>
 
@@ -369,10 +389,80 @@
   <div class="section" id="p-records-content"></div>
   <div class="bottom-nav">
     <div class="bn-item" onclick="pTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
-    <div class="bn-item" onclick="pTab('specialties')"><i class="ti ti-building-hospital"></i><span>Rooms</span></div>
-    <div class="bn-item" onclick="pTab('symptom')"><i class="ti ti-brain"></i><span>Symptoms</span></div>
+    <div class="bn-item" onclick="pTab('search')"><i class="ti ti-search"></i><span>Search</span></div>
+    <div class="bn-item" onclick="pTab('specialists')"><i class="ti ti-stethoscope"></i><span>Following</span></div>
     <div class="bn-item" onclick="pTab('messages')"><i class="ti ti-message-circle"></i><span>Messages</span></div>
     <div class="bn-item active" onclick="pTab('records')"><i class="ti ti-file-medical"></i><span>Records</span></div>
+  </div>
+</div>
+
+<!-- PATIENT PROFILE -->
+<div id="s-p-profile" class="screen">
+  <div class="nav">
+    <div class="nav-title" style="color:var(--teal)"><i class="ti ti-user-circle"></i> My Profile</div>
+    <button class="btn btn-teal btn-sm" style="width:auto;margin:0" onclick="savePatientProfile()">Save</button>
+  </div>
+  <div class="profile-header">
+    <div class="profile-avatar" id="p-profile-avatar">?</div>
+    <div class="profile-name" id="p-profile-name-display">Patient</div>
+    <div class="profile-email" id="p-profile-email-display">email@example.com</div>
+  </div>
+  <div class="section" style="padding-top:0">
+    <div class="field-row">
+      <div class="field"><label>Phone</label><input id="pp-phone" placeholder="+91 98765 43210"></div>
+      <div class="field"><label>Gender</label><select id="pp-gender"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Blood Group</label><select id="pp-blood"><option value="">Select</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select></div>
+      <div class="field"><label>Weight (kg)</label><input type="number" id="pp-weight" placeholder="65"></div>
+    </div>
+    <div class="field"><label>Height (cm)</label><input type="number" id="pp-height" placeholder="170"></div>
+    <div class="field"><label>Allergies</label><input id="pp-allergies" placeholder="e.g. Penicillin, Peanuts"></div>
+    <div class="field"><label>Medical History</label><textarea id="pp-history" placeholder="Any past conditions, surgeries..."></textarea></div>
+    <div class="field"><label>Emergency Contact Name</label><input id="pp-ec-name" placeholder="Parent or Spouse"></div>
+    <div class="field"><label>Emergency Contact Phone</label><input id="pp-ec-phone" placeholder="+91 98765 43210"></div>
+    <div class="alert alert-success" id="pp-ok" style="display:none"><i class="ti ti-check"></i> Profile updated!</div>
+  </div>
+  <div class="bottom-nav">
+    <div class="bn-item" onclick="pTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
+    <div class="bn-item" onclick="pTab('search')"><i class="ti ti-search"></i><span>Search</span></div>
+    <div class="bn-item" onclick="pTab('specialists')"><i class="ti ti-stethoscope"></i><span>Following</span></div>
+    <div class="bn-item" onclick="pTab('messages')"><i class="ti ti-message-circle"></i><span>Messages</span></div>
+    <div class="bn-item active" onclick="pTab('profile')"><i class="ti ti-user-circle"></i><span>Profile</span></div>
+  </div>
+</div>
+
+<!-- MY SPECIALISTS (FOLLOWED DOCTORS) -->
+<div id="s-p-specialists" class="screen">
+  <div class="nav"><div class="nav-title" style="color:var(--purple)"><i class="ti ti-stethoscope"></i> My Specialists</div></div>
+  <div class="section">
+    <p style="font-size:14px;color:#888;margin-bottom:1rem">Doctors you are currently following</p>
+    <div id="specialists-list"><div style="text-align:center;padding:2rem;color:#888"><i class="ti ti-stethoscope" style="font-size:32px;display:block;margin-bottom:8px"></i>You are not following any doctors yet.<br><span style="font-size:13px">Use the Search tab to find and follow doctors!</span></div></div>
+  </div>
+  <div class="bottom-nav">
+    <div class="bn-item" onclick="pTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
+    <div class="bn-item" onclick="pTab('search')"><i class="ti ti-search"></i><span>Search</span></div>
+    <div class="bn-item active" onclick="pTab('specialists')"><i class="ti ti-stethoscope"></i><span>Following</span></div>
+    <div class="bn-item" onclick="pTab('messages')"><i class="ti ti-message-circle"></i><span>Messages</span></div>
+    <div class="bn-item" onclick="pTab('profile')"><i class="ti ti-user-circle"></i><span>Profile</span></div>
+  </div>
+</div>
+
+<!-- FIND DOCTOR SEARCH -->
+<div id="s-p-search" class="screen">
+  <div class="nav"><div class="nav-title" style="color:var(--blue)"><i class="ti ti-search"></i> Find Doctor</div></div>
+  <div class="search-bar">
+    <input id="doc-search-input" placeholder="Search by name, specialty, or city..." oninput="searchDoctors()">
+  </div>
+  <div class="section" style="padding-top:12px">
+    <div id="search-results"><div style="text-align:center;padding:2rem;color:#888"><i class="ti ti-search" style="font-size:32px;display:block;margin-bottom:8px"></i>Start typing to find doctors<br><span style="font-size:13px">Search by name, specialty, or city</span></div></div>
+  </div>
+  <div class="bottom-nav">
+    <div class="bn-item" onclick="pTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
+    <div class="bn-item active" onclick="pTab('search')"><i class="ti ti-search"></i><span>Search</span></div>
+    <div class="bn-item" onclick="pTab('specialists')"><i class="ti ti-stethoscope"></i><span>Following</span></div>
+    <div class="bn-item" onclick="pTab('messages')"><i class="ti ti-message-circle"></i><span>Messages</span></div>
+    <div class="bn-item" onclick="pTab('profile')"><i class="ti ti-user-circle"></i><span>Profile</span></div>
   </div>
 </div>
 
@@ -558,6 +648,7 @@
   <div class="section">
     <div class="field"><label>City</label><input id="dp-city" placeholder="Mumbai"></div>
     <div class="field"><label>Clinic address</label><input id="dp-address" placeholder="123 MG Road, Andheri West"></div>
+    <div class="field"><label>Clinic Photo URL</label><input id="dp-photo" placeholder="https://example.com/photo.jpg"></div>
     <div class="field"><label>Max appointments per day</label><input type="number" id="dp-maxapt" min="1" max="50" placeholder="10"></div>
     <div class="field"><label>Bio</label><textarea id="dp-bio" placeholder="Brief description..."></textarea></div>
     <div class="alert alert-success" id="dp-ok" style="display:none"><i class="ti ti-check"></i> Profile updated!</div>

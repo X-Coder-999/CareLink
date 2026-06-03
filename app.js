@@ -130,13 +130,16 @@ function _showScreen(id){
 window.addEventListener('popstate',()=>goBack());
 
 function pTab(tab){
-  const map={home:'s-patient-dash',specialties:'s-p-specialties',nearby:'s-p-nearby',requests:'s-p-requests',messages:'s-p-messages',symptom:'s-p-symptom',records:'s-p-records',notifications:'s-p-notifications'};
+  const map={home:'s-patient-dash',specialties:'s-p-specialties',nearby:'s-p-nearby',requests:'s-p-requests',messages:'s-p-messages',symptom:'s-p-symptom',records:'s-p-records',notifications:'s-p-notifications',profile:'s-p-profile',specialists:'s-p-specialists',search:'s-p-search'};
   go(map[tab]||'s-patient-dash');
   if(tab==='specialties')renderSpecialties();
   if(tab==='requests')loadMyRequests();
   if(tab==='records'){currentRecordTab='files';loadPatientRecords('files');}
   if(tab==='messages')loadChatMessages('p');
   if(tab==='notifications')loadNotifications('p');
+  if(tab==='profile')loadPatientProfile();
+  if(tab==='specialists')loadMySpecialists();
+  if(tab==='home')drawMindMap();
 }
 
 function dTab(tab){
@@ -235,7 +238,7 @@ async function triggerSOSAlert(type) {
     startSessionTimer();
     initSOS();
   } else if(r==='doctor'){
-    const d=(await api(`/doctors?id=eq.${u.id}&select=full_name,specialty,status,city,max_appointments,bio,address`))[0];
+    const d=(await api(`/doctors?id=eq.${u.id}&select=full_name,specialty,status,city,max_appointments,bio,address,clinic_photo_url`))[0];
     if(!d){document.getElementById('app-loading').style.display='none';return;}
     setDoctorDash(d);
     _showScreen(page||'s-doctor-dash');
@@ -257,6 +260,7 @@ function setDoctorDash(d){
   if(d.address)document.getElementById('dp-address').value=d.address;
   if(d.max_appointments)document.getElementById('dp-maxapt').value=d.max_appointments;
   if(d.bio)document.getElementById('dp-bio').value=d.bio;
+  if(d.clinic_photo_url)document.getElementById('dp-photo').value=d.clinic_photo_url;
 }
 
 async function loadUnreadCount(){
@@ -922,7 +926,7 @@ async function loadPatientProfile(){
 
 async function saveDoctorProfile(){
   if(!currentUser)return;
-  await api(`/doctors?id=eq.${currentUser.id}`,{method:'PATCH',body:JSON.stringify({city:document.getElementById('dp-city').value,address:document.getElementById('dp-address').value,max_appointments:parseInt(document.getElementById('dp-maxapt').value)||10,bio:document.getElementById('dp-bio').value})});
+  await api(`/doctors?id=eq.${currentUser.id}`,{method:'PATCH',body:JSON.stringify({city:document.getElementById('dp-city').value,address:document.getElementById('dp-address').value,clinic_photo_url:document.getElementById('dp-photo').value,max_appointments:parseInt(document.getElementById('dp-maxapt').value)||10,bio:document.getElementById('dp-bio').value})});
   const ok=document.getElementById('dp-ok');ok.style.display='flex';setTimeout(()=>ok.style.display='none',3000);
   showToast('Profile updated!');
 }
@@ -959,4 +963,174 @@ async function signOut(){
   pageHistory=['s-home'];go('s-home');
   showToast('Signed out successfully.');
 }
+
+// ── MIND MAP & SEARCH & FOLLOW LOGIC ──
+
+let searchTimeout;
+async function searchDoctors(){
+  const query = document.getElementById('doc-search-input').value.trim().toLowerCase();
+  const resDiv = document.getElementById('search-results');
+  if(!query || query.length < 2) {
+    resDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#888"><i class="ti ti-search" style="font-size:32px;display:block;margin-bottom:8px"></i>Start typing to find doctors<br><span style="font-size:13px">Search by name, specialty, or city</span></div>';
+    return;
+  }
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(async () => {
+    resDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#888"><div class="spinner spinner-dark"></div></div>';
+    // Search Supabase with ilike on multiple columns
+    const res = await api(`/doctors?or=(full_name.ilike.*${query}*,specialty.ilike.*${query}*,city.ilike.*${query}*)&status=eq.verified&select=id,full_name,specialty,hospital,city,clinic_photo_url`);
+    
+    if(!res || res.length === 0) {
+      resDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#888">No doctors found matching your search.</div>';
+      return;
+    }
+
+    // Get current patient follows to show correct button state
+    const followsRes = await api(`/follows?patient_id=eq.${currentUser.id}`);
+    const followingIds = followsRes ? followsRes.map(f => f.doctor_id) : [];
+
+    let html = '';
+    for(const d of res) {
+      const isFollowing = followingIds.includes(d.id);
+      const btnClass = isFollowing ? 'btn-follow following' : 'btn-follow';
+      const btnText = isFollowing ? '<i class="ti ti-check"></i> Following' : '<i class="ti ti-plus"></i> Follow';
+      const photo = d.clinic_photo_url ? `<img src="${sanitize(d.clinic_photo_url)}" class="clinic-photo">` : '';
+      
+      html += `
+        <div class="doc-card-v2">
+          <div class="doc-top">
+            <div class="doc-avatar">${d.full_name ? d.full_name.split(' ').map(w=>w[0]).join('').slice(0,2) : 'DR'}</div>
+            <div class="doc-info">
+              <div class="doc-name">${sanitize(d.full_name||'Doctor')}</div>
+              <div class="doc-spec">${sanitize(d.specialty||'')}</div>
+            </div>
+            <button class="${btnClass}" onclick="toggleFollow('${d.id}', this)">${btnText}</button>
+          </div>
+          <div class="doc-meta">
+            <span><i class="ti ti-building-hospital"></i> ${sanitize(d.hospital||'')}</span>
+            <span><i class="ti ti-map-pin"></i> ${sanitize(d.city||'')}</span>
+          </div>
+          ${photo}
+          <div class="doc-actions">
+            <button class="btn btn-purple btn-sm" onclick="openRequest('${d.id}', '${sanitize(d.full_name)}')">Book Appt</button>
+          </div>
+        </div>
+      `;
+    }
+    resDiv.innerHTML = html;
+  }, 400);
+}
+
+async function toggleFollow(docId, btnEl) {
+  if(!currentUser) return;
+  const isFollowing = btnEl.classList.contains('following');
+  
+  btnEl.disabled = true;
+  if(isFollowing) {
+    // Unfollow
+    await api(`/follows?patient_id=eq.${currentUser.id}&doctor_id=eq.${docId}`, { method: 'DELETE' });
+    btnEl.className = 'btn-follow';
+    btnEl.innerHTML = '<i class="ti ti-plus"></i> Follow';
+  } else {
+    // Follow
+    await api('/follows', { method: 'POST', body: JSON.stringify({ patient_id: currentUser.id, doctor_id: docId }) });
+    btnEl.className = 'btn-follow following';
+    btnEl.innerHTML = '<i class="ti ti-check"></i> Following';
+  }
+  btnEl.disabled = false;
+  drawMindMap(); // Update count
+}
+
+async function loadMySpecialists() {
+  if(!currentUser) return;
+  const listDiv = document.getElementById('specialists-list');
+  listDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#888"><div class="spinner spinner-dark"></div></div>';
+  
+  const followsRes = await api(`/follows?patient_id=eq.${currentUser.id}`);
+  if(!followsRes || followsRes.length === 0) {
+    listDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#888"><i class="ti ti-stethoscope" style="font-size:32px;display:block;margin-bottom:8px"></i>You are not following any doctors yet.<br><span style="font-size:13px">Use the Search tab to find and follow doctors!</span></div>';
+    return;
+  }
+  
+  const docIds = followsRes.map(f => f.doctor_id).join(',');
+  const docsRes = await api(`/doctors?id=in.(${docIds})&select=id,full_name,specialty,city`);
+  
+  if(!docsRes || docsRes.length === 0) {
+    listDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#888">You are not following any doctors yet.</div>';
+    return;
+  }
+  
+  let html = '';
+  for(const d of docsRes) {
+    html += `
+      <div class="specialist-card">
+        <div class="avatar" style="background:var(--grad2);color:#fff;width:40px;height:40px;font-size:14px">
+          ${d.full_name ? d.full_name.split(' ').map(w=>w[0]).join('').slice(0,2) : 'DR'}
+        </div>
+        <div class="spec-info">
+          <div class="spec-name">${sanitize(d.full_name||'Doctor')}</div>
+          <div class="spec-detail">${sanitize(d.specialty||'')} • ${sanitize(d.city||'')}</div>
+        </div>
+        <button class="btn-outline btn-sm" style="padding:6px 12px;border-radius:20px;border-color:var(--coral);color:var(--coral)" onclick="toggleFollow('${d.id}', this); setTimeout(()=>loadMySpecialists(), 500)">Unfollow</button>
+      </div>
+    `;
+  }
+  listDiv.innerHTML = html;
+}
+
+async function drawMindMap() {
+  if(!currentUser || pageHistory[pageHistory.length-1] !== 's-patient-dash') return;
+  
+  const avatarEl = document.getElementById('mc-avatar');
+  const nameEl = document.getElementById('mc-name');
+  if(avatarEl && nameEl && currentUser.user_metadata) {
+    const fn = currentUser.user_metadata.full_name || 'Patient';
+    nameEl.textContent = fn.split(' ')[0];
+    avatarEl.textContent = fn.split(' ').map(w=>w[0]).join('').slice(0,2);
+  }
+  
+  // Custom fetch to get exact count directly from PostgREST headers since our standard API wrapper expects JSON body
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/follows?patient_id=eq.${currentUser.id}`, {
+      method: 'HEAD',
+      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${currentToken}`, 'Prefer': 'count=exact' }
+    });
+    const contentRange = res.headers.get('content-range');
+    let fCount = 0;
+    if(contentRange) fCount = parseInt(contentRange.split('/')[1]);
+    const countEl = document.getElementById('mm-follow-count');
+    if(countEl) countEl.textContent = fCount + ' following';
+  } catch(e) {}
+
+  const svg = document.getElementById('mindmap-svg');
+  const container = document.getElementById('mindmap-container');
+  const center = document.getElementById('mindmap-center');
+  if(!svg || !container || !center) return;
+  
+  setTimeout(() => {
+    const cRect = container.getBoundingClientRect();
+    const cx = cRect.width / 2;
+    const cy = cRect.height / 2;
+    
+    let linesHtml = '';
+    const nodes = container.querySelectorAll('.mindmap-node');
+    nodes.forEach(node => {
+      const nRect = node.getBoundingClientRect();
+      const nx = (nRect.left - cRect.left) + (nRect.width / 2);
+      const ny = (nRect.top - cRect.top) + (nRect.height / 2);
+      let color = 'rgba(0,0,0,0.1)';
+      if(node.classList.contains('node-top')) color = 'var(--coral)';
+      if(node.classList.contains('node-right')) color = 'var(--purple)';
+      if(node.classList.contains('node-bottom')) color = 'var(--green)';
+      if(node.classList.contains('node-left')) color = 'var(--blue)';
+      
+      linesHtml += `<line x1="${cx}" y1="${cy}" x2="${nx}" y2="${ny}" stroke="${color}"></line>`;
+    });
+    svg.innerHTML = linesHtml;
+  }, 100);
+}
+
+window.addEventListener('resize', () => {
+  if(pageHistory[pageHistory.length-1] === 's-patient-dash') drawMindMap();
+});
 
