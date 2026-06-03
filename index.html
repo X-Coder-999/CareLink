@@ -135,6 +135,10 @@
     <div class="field"><label>Clinic address</label><input id="dr-address" placeholder="123 MG Road, Andheri West"></div>
     <div class="field"><label>MCI License number</label><input id="dr-license" placeholder="MCI-2019-12345" oninput="checkLicense(this)"></div>
     <div id="license-check" style="font-size:12px;margin-top:-8px;margin-bottom:8px;padding:6px 10px;border-radius:8px;display:none"></div>
+    <div class="field"><label>Upload License Photo</label>
+      <input type="file" id="dr-license-upload" accept="image/*" style="padding:10px;background:#f9f9f9;border:1px dashed #ccc">
+      <div style="font-size:11px;color:#888;margin-top:4px"><i class="ti ti-scan"></i> AI will automatically scan this image for verification.</div>
+    </div>
     <div class="field"><label>Medical council</label>
       <select id="dr-council"><option value="">Select council</option><option>Medical Council of India</option><option>Maharashtra Medical Council</option><option>Delhi Medical Council</option><option>Karnataka Medical Council</option><option>Tamil Nadu Medical Council</option></select>
     </div>

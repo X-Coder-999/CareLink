@@ -344,16 +344,89 @@ async function doctorLogin(){
 
 async function doctorRegister(){
   const fname=document.getElementById('dr-fname').value,lname=document.getElementById('dr-lname').value,spec=document.getElementById('dr-spec').value,license=document.getElementById('dr-license').value,council=document.getElementById('dr-council').value,email=document.getElementById('dr-email').value,pass=document.getElementById('dr-pass').value;
+  const fileInput=document.getElementById('dr-license-upload');
   if(!fname||!lname||!spec||!license||!council||!email||!pass){showErr('dr-err','dr-err-msg','Please fill in all required fields.');return;}
   if(!/^MCI-\d{4}-\d{5}$/.test(license.trim())){showErr('dr-err','dr-err-msg','Invalid MCI license format. Use: MCI-YYYY-NNNNN');return;}
+  if(!fileInput.files||!fileInput.files[0]){showErr('dr-err','dr-err-msg','Please upload a photo of your medical license.');return;}
   if(pass.length<8){showErr('dr-err','dr-err-msg','Password must be at least 8 characters.');return;}
-  setBtn('dr-btn',true,'');hideErr('dr-err');
+  setBtn('dr-btn',true,'<i class="ti ti-scan"></i> AI is scanning your license...');hideErr('dr-err');
+
+  // Convert uploaded image to Base64
+  let base64Img='';
+  try {
+    const file=fileInput.files[0];
+    base64Img=await new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(reader.result);
+      reader.onerror=reject;
+      reader.readAsDataURL(file);
+    });
+  } catch(e){ showErr('dr-err','dr-err-msg','Could not read file. Try a different image.');setBtn('dr-btn',false,'<i class="ti ti-send"></i> Register and verify');return; }
+
+  // AI Vision Verification via Groq
+  let aiVerdict='pending';
+  try {
+    const visionResp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},
+      body:JSON.stringify({
+        model:'llama-3.2-90b-vision-preview',
+        messages:[{
+          role:'user',
+          content:[
+            {type:'text',text:`You are a medical license verification AI. Analyze this uploaded medical license image carefully.
+
+TASK:
+1. Extract the doctor's full name from the certificate.
+2. Extract the MCI/registration number from the certificate.
+3. Check for signs of forgery or AI-generation: Look for unnatural fonts, blurry/missing official seals, inconsistent shadows, perfectly smooth textures, misaligned text, pixelation around text, missing watermarks, or any visual anomalies that suggest the document is fake, edited, or AI-generated.
+
+The doctor claims their name is: Dr. ${fname} ${lname}
+The doctor claims their MCI number is: ${license.trim()}
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "extracted_name": "name you found on the document or null",
+  "extracted_mci": "MCI number you found on the document or null",
+  "name_match": true/false,
+  "mci_match": true/false,
+  "forgery_suspected": true/false,
+  "forgery_reason": "reason if suspected, or null",
+  "confidence": "high/medium/low",
+  "verdict": "verified" or "pending"
+}
+
+Rules for verdict:
+- "verified" ONLY if: name_match=true AND mci_match=true AND forgery_suspected=false AND confidence is "high"
+- "pending" for ALL other cases (any mismatch, any forgery suspicion, low confidence, unreadable image)`},
+            {type:'image_url',image_url:{url:base64Img}}
+          ]
+        }],
+        temperature:0.1,
+        max_tokens:500,
+        response_format:{type:'json_object'}
+      })
+    });
+    const vData=await visionResp.json();
+    if(vData.choices&&vData.choices[0]){
+      const parsed=JSON.parse(vData.choices[0].message.content);
+      aiVerdict=parsed.verdict==='verified'?'verified':'pending';
+      console.log('AI Verification Result:',parsed);
+    }
+  } catch(e){ console.error('AI Vision error:',e); aiVerdict='pending'; }
+
+  // Signup the doctor
   const res=await authApi('/signup',{email,password:pass,data:{role:'doctor',full_name:`Dr. ${fname} ${lname}`}});
   if(res.error){showErr('dr-err','dr-err-msg',res.error_description||res.error);setBtn('dr-btn',false,'<i class="ti ti-send"></i> Register and verify');return;}
   if(res.user){
-    if(res.session && res.session.access_token) currentToken = res.session.access_token; // Temporarily use token to bypass RLS
-    await api('/doctors',{method:'POST',body:JSON.stringify({id:res.user.id,full_name:`Dr. ${fname} ${lname}`,email,phone:document.getElementById('dr-phone').value,specialty:spec,hospital:document.getElementById('dr-hospital').value,city:document.getElementById('dr-city').value,address:document.getElementById('dr-address').value,license_number:license.trim(),council,max_appointments:parseInt(document.getElementById('dr-maxapt').value)||10,bio:document.getElementById('dr-bio').value,status:'verified',verified_at:new Date().toISOString()})});
-    currentToken = null; // Clear it until they actually log in
+    if(res.session && res.session.access_token) currentToken = res.session.access_token;
+    await api('/doctors',{method:'POST',body:JSON.stringify({id:res.user.id,full_name:`Dr. ${fname} ${lname}`,email,phone:document.getElementById('dr-phone').value,specialty:spec,hospital:document.getElementById('dr-hospital').value,city:document.getElementById('dr-city').value,address:document.getElementById('dr-address').value,license_number:license.trim(),council,max_appointments:parseInt(document.getElementById('dr-maxapt').value)||10,bio:document.getElementById('dr-bio').value,status:aiVerdict,verified_at:aiVerdict==='verified'?new Date().toISOString():null})});
+    currentToken = null;
+  }
+  if(aiVerdict==='verified'){
+    document.getElementById('dr-ok').innerHTML='<i class="ti ti-shield-check"></i> AI Verified! Your license has been automatically verified. You can now log in.';
+  } else {
+    document.getElementById('dr-ok').innerHTML='<i class="ti ti-clock"></i> Account created! Your license is under review. You will be verified shortly by admin.';
   }
   document.getElementById('dr-ok').style.display='flex';
   setBtn('dr-btn',false,'<i class="ti ti-send"></i> Register and verify');
