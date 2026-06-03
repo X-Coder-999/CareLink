@@ -316,8 +316,10 @@ async function patientRegister(){
   const res=await authApi('/signup',{email,password:pass,data:{role:'patient',full_name:`${fname} ${lname}`}});
   if(res.error){showErr('pr-err','pr-err-msg',res.error_description||res.error);setBtn('pr-btn',false,'<i class="ti ti-check"></i> Create account');return;}
   if(res.user){
+    if(res.session && res.session.access_token) currentToken = res.session.access_token; // Temporarily use token to bypass RLS
     const day=document.getElementById('pr-day').value,month=document.getElementById('pr-month').value,year=document.getElementById('pr-year').value;
     await api('/patients',{method:'POST',body:JSON.stringify({id:res.user.id,full_name:`${fname} ${lname}`,email,phone:document.getElementById('pr-phone').value,gender:document.getElementById('pr-gender').value,dob:(day&&month&&year)?`${year}-${month}-${day}`:null,blood_group:document.getElementById('pr-blood').value||null,allergies:document.getElementById('pr-allergies').value,emergency_contact:document.getElementById('pr-ec-name').value,emergency_phone:document.getElementById('pr-ec-phone').value,ip_address:ip,device_id:devId,status:'active'})});
+    currentToken = null; // Clear it until they actually log in
   }
   document.getElementById('pr-ok').style.display='flex';
   setBtn('pr-btn',false,'<i class="ti ti-check"></i> Create account');
@@ -349,7 +351,9 @@ async function doctorRegister(){
   const res=await authApi('/signup',{email,password:pass,data:{role:'doctor',full_name:`Dr. ${fname} ${lname}`}});
   if(res.error){showErr('dr-err','dr-err-msg',res.error_description||res.error);setBtn('dr-btn',false,'<i class="ti ti-send"></i> Register and verify');return;}
   if(res.user){
+    if(res.session && res.session.access_token) currentToken = res.session.access_token; // Temporarily use token to bypass RLS
     await api('/doctors',{method:'POST',body:JSON.stringify({id:res.user.id,full_name:`Dr. ${fname} ${lname}`,email,phone:document.getElementById('dr-phone').value,specialty:spec,hospital:document.getElementById('dr-hospital').value,city:document.getElementById('dr-city').value,address:document.getElementById('dr-address').value,license_number:license.trim(),council,max_appointments:parseInt(document.getElementById('dr-maxapt').value)||10,bio:document.getElementById('dr-bio').value,status:'verified',verified_at:new Date().toISOString()})});
+    currentToken = null; // Clear it until they actually log in
   }
   document.getElementById('dr-ok').style.display='flex';
   setBtn('dr-btn',false,'<i class="ti ti-send"></i> Register and verify');
