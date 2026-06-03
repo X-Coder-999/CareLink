@@ -244,6 +244,10 @@ async function triggerSOSAlert(type) {
     _showScreen(page||'s-doctor-dash');
     loadUnreadCount();
     startSessionTimer();
+  } else if(r==='admin'){
+    _showScreen(page||'s-admin-dash');
+    loadAdminData();
+    startSessionTimer();
   }
   document.getElementById('app-loading').style.display='none';
 })();
@@ -457,8 +461,8 @@ function signOutAdmin(){pageHistory=['s-home'];go('s-home');}
 
 async function loadAdminData(){
   const [patients,doctors]=await Promise.all([
-    api('/patients?select=id,full_name,email,phone,blood_group,created_at&order=created_at.desc'),
-    api('/doctors?select=id,full_name,email,specialty,status,license_number,city,hospital,created_at&order=created_at.desc')
+    api('/patients?select=id,full_name,email,phone,blood_group,created_at&order=created_at.desc&limit=1000'),
+    api('/doctors?select=id,full_name,email,specialty,status,license_number,city,hospital,created_at&order=created_at.desc&limit=1000')
   ]);
   window._adminPatients=Array.isArray(patients)?patients:[];
   window._adminDoctors=Array.isArray(doctors)?doctors:[];
