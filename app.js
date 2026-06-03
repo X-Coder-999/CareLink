@@ -2,7 +2,7 @@
 // ── CONFIG (move to env variables on Vercel) ──
 const SB_URL='https://nteqwktntktsrpucfzel.supabase.co';
 const SB_KEY='sb_publishable_gCeRe5q1IYA77pTa0X2bog_3bpf7CtE'; // TODO: env var VITE_SUPABASE_KEY
-const ADMIN_PASS_HASH='8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918'; // SHA256 of 'carelink2025' - never store plain text
+const ADMIN_PASS_HASH='8215cf6da1875d8cca983fc0fd887b8975fb8f0fcfab336b607336cc96f38a62'; // SHA256 of 'TANMAY518106' - never store plain text
 const SESSION_DURATION=12*60*60*1000; // 12 hours in ms
 let currentUser=null,currentToken=null,selectedDoctorId=null,selectedSeverity=null,blockedUsers=[],rxMedCount=0,currentRecordTab='files',currentAdminTab='doctors',pageHistory=['s-home'];
 
