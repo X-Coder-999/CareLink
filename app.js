@@ -265,11 +265,24 @@ async function patientRegister(){
   if(!fname||!lname||!email||!pass){showErr('pr-err','pr-err-msg','Please fill in all required fields.');return;}
   if(pass.length<8){showErr('pr-err','pr-err-msg','Password must be at least 8 characters.');return;}
   setBtn('pr-btn',true,'');hideErr('pr-err');
+  
+  // ANTI-SPAM: IP and Device Check
+  let ip='unknown', devId=localStorage.getItem('cl_device_id');
+  try{ ip=(await fetch('https://api.ipify.org?format=json').then(r=>r.json())).ip; }catch(e){}
+  if(!devId){ devId='dev_'+Math.random().toString(36).substr(2,9)+Date.now(); localStorage.setItem('cl_device_id',devId); }
+  
+  const existing=await api(`/patients?select=id&or=(ip_address.eq.${ip},device_id.eq.${devId})`);
+  if(Array.isArray(existing) && existing.length>0){
+    showErr('pr-err','pr-err-msg','Account limit reached for this network/device.');
+    setBtn('pr-btn',false,'<i class="ti ti-check"></i> Create account');
+    return;
+  }
+
   const res=await authApi('/signup',{email,password:pass,data:{role:'patient',full_name:`${fname} ${lname}`}});
   if(res.error){showErr('pr-err','pr-err-msg',res.error_description||res.error);setBtn('pr-btn',false,'<i class="ti ti-check"></i> Create account');return;}
   if(res.user){
     const day=document.getElementById('pr-day').value,month=document.getElementById('pr-month').value,year=document.getElementById('pr-year').value;
-    await api('/patients',{method:'POST',body:JSON.stringify({id:res.user.id,full_name:`${fname} ${lname}`,email,phone:document.getElementById('pr-phone').value,gender:document.getElementById('pr-gender').value,dob:(day&&month&&year)?`${year}-${month}-${day}`:null,blood_group:document.getElementById('pr-blood').value||null,allergies:document.getElementById('pr-allergies').value,emergency_contact:document.getElementById('pr-ec-name').value,emergency_phone:document.getElementById('pr-ec-phone').value})});
+    await api('/patients',{method:'POST',body:JSON.stringify({id:res.user.id,full_name:`${fname} ${lname}`,email,phone:document.getElementById('pr-phone').value,gender:document.getElementById('pr-gender').value,dob:(day&&month&&year)?`${year}-${month}-${day}`:null,blood_group:document.getElementById('pr-blood').value||null,allergies:document.getElementById('pr-allergies').value,emergency_contact:document.getElementById('pr-ec-name').value,emergency_phone:document.getElementById('pr-ec-phone').value,ip_address:ip,device_id:devId,status:'active'})});
   }
   document.getElementById('pr-ok').style.display='flex';
   setBtn('pr-btn',false,'<i class="ti ti-check"></i> Create account');
@@ -498,6 +511,7 @@ async function loadAptRequests(){
       <button class="btn btn-green btn-sm" onclick="updateRequest('${r.id}','accepted','${r.patient_id}')"><i class="ti ti-check"></i> Accept</button>
       <button class="btn btn-red btn-sm" onclick="updateRequest('${r.id}','rejected','${r.patient_id}')"><i class="ti ti-x"></i> Reject</button>
       <button class="btn btn-outline btn-sm" style="color:var(--coral);border-color:var(--coral)" onclick="blockUser('${r.patient_id}','${r.patients?.full_name||'User'}')"><i class="ti ti-user-off"></i> Block</button>
+      <button class="btn btn-outline btn-sm" style="color:var(--amber);border-color:var(--amber)" onclick="reportUser('${r.patient_id}','${r.patients?.full_name||'User'}', '${r.reason?r.reason.replace(/'/g, "\\'"):'No reason'}')"><i class="ti ti-flag"></i> Report Spam</button>
     </div>`:''}
   </div>`).join('');
 }
@@ -507,6 +521,38 @@ async function updateRequest(id,status,patientId){
   await api('/notifications',{method:'POST',body:JSON.stringify({user_id:patientId,title:status==='accepted'?'Appointment Accepted':'Appointment Rejected',message:status==='accepted'?'Your appointment request has been accepted by the doctor.':'Your appointment request was not accepted.',type:status==='accepted'?'success':'danger'})});
   showToast(status==='accepted'?'Appointment accepted!':'Appointment rejected.');
   loadAptRequests();
+}
+
+async function reportUser(pid, name, reason){
+  if(!currentUser)return;
+  if(!confirm('Report ' + sanitize(name) + ' for spam? This will trigger an AI review.')) return;
+  showToast('Analysing user activity...', 4000);
+  
+  try {
+    const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},
+      body:JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        messages:[{role:'system', content:'You are a spam review bot. Decide if this appointment request is spam or abuse. Respond ONLY with valid JSON: {"is_spam":true/false, "reason":"short reason"}'}, {role:'user',content:`Patient name: ${name}. Appointment reason: ${reason}. Is this spam/troll?`}],
+        response_format:{type:'json_object'}
+      })
+    });
+    const data=await resp.json();
+    let result = JSON.parse(data.choices[0].message.content);
+    
+    await api('/spam_reports',{method:'POST',body:JSON.stringify({doctor_id:currentUser.id,patient_id:pid,ai_decision:result.is_spam,reason:result.reason})});
+    
+    if(result.is_spam) {
+      await api(`/patients?id=eq.${pid}`,{method:'PATCH',body:JSON.stringify({status:'suspended'})});
+      showToast(`${sanitize(name)} was auto-banned for spam!`);
+      blockUser(pid, name);
+    } else {
+      showToast('AI determined this is not spam. Report logged.');
+    }
+  } catch(e) {
+    showToast('Failed to review spam.');
+  }
 }
 
 async function blockUser(pid,name){
