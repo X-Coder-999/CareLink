@@ -399,7 +399,10 @@
 <!-- PATIENT PROFILE -->
 <div id="s-p-profile" class="screen">
   <div class="nav">
-    <div class="nav-title" style="color:var(--teal)"><i class="ti ti-user-circle"></i> My Profile</div>
+    <div class="nav-title" style="color:var(--teal);display:flex;align-items:center;gap:8px">
+      <button class="nav-btn" onclick="pTab('home')" style="padding:0"><i class="ti ti-arrow-left"></i></button>
+      <span><i class="ti ti-user-circle"></i> My Profile</span>
+    </div>
     <button class="btn btn-teal btn-sm" style="width:auto;margin:0" onclick="savePatientProfile()">Save</button>
   </div>
   <div class="profile-header">
@@ -434,7 +437,12 @@
 
 <!-- MY SPECIALISTS (FOLLOWED DOCTORS) -->
 <div id="s-p-specialists" class="screen">
-  <div class="nav"><div class="nav-title" style="color:var(--purple)"><i class="ti ti-stethoscope"></i> My Specialists</div></div>
+  <div class="nav">
+    <div class="nav-title" style="color:var(--purple);display:flex;align-items:center;gap:8px">
+      <button class="nav-btn" onclick="pTab('home')" style="padding:0"><i class="ti ti-arrow-left"></i></button>
+      <span><i class="ti ti-stethoscope"></i> My Specialists</span>
+    </div>
+  </div>
   <div class="section">
     <p style="font-size:14px;color:#888;margin-bottom:1rem">Doctors you are currently following</p>
     <div id="specialists-list"><div style="text-align:center;padding:2rem;color:#888"><i class="ti ti-stethoscope" style="font-size:32px;display:block;margin-bottom:8px"></i>You are not following any doctors yet.<br><span style="font-size:13px">Use the Search tab to find and follow doctors!</span></div></div>
@@ -450,7 +458,12 @@
 
 <!-- FIND DOCTOR SEARCH -->
 <div id="s-p-search" class="screen">
-  <div class="nav"><div class="nav-title" style="color:var(--blue)"><i class="ti ti-search"></i> Find Doctor</div></div>
+  <div class="nav">
+    <div class="nav-title" style="color:var(--blue);display:flex;align-items:center;gap:8px">
+      <button class="nav-btn" onclick="pTab('home')" style="padding:0"><i class="ti ti-arrow-left"></i></button>
+      <span><i class="ti ti-search"></i> Find Doctor</span>
+    </div>
+  </div>
   <div class="search-bar">
     <input id="doc-search-input" placeholder="Search by name, specialty, or city..." oninput="searchDoctors()">
   </div>
