@@ -187,6 +187,40 @@ function startSessionTimer(){
   const ryr=document.getElementById('req-year');const cy=new Date().getFullYear();for(let y=cy;y<=cy+1;y++)ryr.innerHTML+=`<option value="${y}">${y}</option>`;
 })();
 
+// ── SOS EMERGENCY ──
+async function initSOS() {
+  const btn = document.getElementById('sos-btn');
+  if(!btn) return;
+  btn.style.display = 'flex';
+  const p = await api(`/patients?id=eq.${currentUser.id}&select=emergency_contact,emergency_phone`);
+  const familyBtn = document.getElementById('sos-family-btn');
+  if(p && p[0] && p[0].emergency_phone) {
+    familyBtn.style.display = 'flex';
+    document.getElementById('sos-family-name').textContent = `${p[0].emergency_contact} (${p[0].emergency_phone})`;
+    familyBtn.href = `tel:${p[0].emergency_phone.replace(/\s+/g,'')}`;
+  } else {
+    familyBtn.style.display = 'none';
+  }
+}
+function openSOS(){ document.getElementById('sos-modal').classList.add('active'); }
+function closeSOS(){ document.getElementById('sos-modal').classList.remove('active'); }
+async function triggerSOSAlert(type) {
+  closeSOS();
+  showToast(`Dialing ${type}... alerting nearby doctors!`, 5000);
+  const docs = await api('/doctors?status=eq.verified&select=id');
+  if(Array.isArray(docs) && docs.length > 0) {
+    const p = await api(`/patients?id=eq.${currentUser.id}&select=full_name`);
+    const pname = p[0]?.full_name || 'A patient';
+    const notifications = docs.map(d => ({
+      user_id: d.id,
+      title: '🚨 EMERGENCY SOS TRIGGERED 🚨',
+      message: `${pname} has triggered an SOS alert (${type}). Check on them immediately!`,
+      type: 'danger'
+    }));
+    await api('/notifications', { method:'POST', body:JSON.stringify(notifications) });
+  }
+}
+
 // ── RESTORE SESSION ON REFRESH ──
 ;(async function(){
   if(!isSessionValid())return;
@@ -199,6 +233,7 @@ function startSessionTimer(){
     _showScreen(page||'s-patient-dash');
     loadUnreadCount();
     startSessionTimer();
+    initSOS();
   } else if(r==='doctor'){
     const d=(await api(`/doctors?id=eq.${u.id}&select=full_name,specialty,status,city,max_appointments,bio,address`))[0];
     if(!d){document.getElementById('app-loading').style.display='none';return;}
@@ -256,7 +291,7 @@ async function patientLogin(){
   const p=await api(`/patients?id=eq.${res.user.id}&select=full_name`);
   document.getElementById('p-dash-name').textContent=p[0]?.full_name||email;
   pageHistory=['s-home','s-patient-dash'];
-  go('s-patient-dash');loadUnreadCount();startSessionTimer();
+  go('s-patient-dash');loadUnreadCount();startSessionTimer();initSOS();
   setBtn('pl-btn',false,'<i class="ti ti-login"></i> Sign in');
 }
 
@@ -843,6 +878,7 @@ async function signOut(){
   if(window._sessionTimer)clearInterval(window._sessionTimer);
   await fetch(`${SB_URL}/auth/v1/logout`,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':`Bearer ${currentToken}`}}).catch(()=>{});
   currentUser=null;currentToken=null;clearSession();
+  const sosBtn=document.getElementById('sos-btn');if(sosBtn)sosBtn.style.display='none';
   pageHistory=['s-home'];go('s-home');
   showToast('Signed out successfully.');
 }
