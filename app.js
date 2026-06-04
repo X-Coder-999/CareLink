@@ -73,13 +73,17 @@ async function refreshToken(){
 
 // ── API ──
 const api=async(path,opts={})=>{
-  // Auto-refresh token if close to expiry (within 5 min)
-  const exp=parseInt(sessionStorage.getItem('cl_exp')||'0');
-  if(currentToken && Date.now()>exp-(5*60*1000)){await refreshToken();}
+  const isAdmin = sessionStorage.getItem('cl_r')==='admin';
+  // Auto-refresh token if close to expiry (within 5 min) - skip for admin
+  if(!isAdmin) {
+    const exp=parseInt(sessionStorage.getItem('cl_exp')||'0');
+    if(currentToken && Date.now()>exp-(5*60*1000)){await refreshToken();}
+  }
   const r=await fetch(`${SB_URL}/rest/v1${path}`,{
     headers:{'apikey':SB_KEY,'Authorization':`Bearer ${currentToken||SB_KEY}`,'Content-Type':'application/json','Prefer':'return=representation',...(opts.headers||{})}, ...opts
   });
   if(r.status===401){
+    if(isAdmin) return r.json().catch(()=>({}));
     const refreshed=await refreshToken();
     if(!refreshed){signOut();return{};}
     return fetch(`${SB_URL}/rest/v1${path}`,{
@@ -245,6 +249,8 @@ async function triggerSOSAlert(type) {
     loadUnreadCount();
     startSessionTimer();
   } else if(r==='admin'){
+    currentToken = null; // Use anon key for admin
+    currentUser = u;
     _showScreen(page||'s-admin-dash');
     loadAdminData();
     startSessionTimer();
@@ -449,7 +455,9 @@ async function adminLogin(){
   const hash=await sha256(document.getElementById('admin-pass').value);
   if(hash===ADMIN_PASS_HASH){
     document.getElementById('admin-err').style.display='none';
-    saveSession('admin-token', {id: 'admin', email: 'admin@carelink.com'}, 'admin');
+    currentToken = null; // Use anon key for admin API calls
+    currentUser = {id: 'admin', email: 'admin@carelink.com'};
+    saveSession('', {id: 'admin', email: 'admin@carelink.com'}, 'admin');
     pageHistory.push('s-admin-dash');
     _showScreen('s-admin-dash');
     loadAdminData();
