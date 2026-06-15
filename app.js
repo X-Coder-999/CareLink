@@ -188,10 +188,10 @@ function startSessionTimer(){
 
 // ── DOB DROPDOWNS ──
 ;(function(){
-  const day=document.getElementById('pr-day');for(let i=1;i<=31;i++)day.innerHTML+=`<option value="${String(i).padStart(2,'0')}">${i}</option>`;
-  const yr=document.getElementById('pr-year');for(let y=2015;y>=1940;y--)yr.innerHTML+=`<option value="${y}">${y}</option>`;
-  const rday=document.getElementById('req-day');for(let i=1;i<=31;i++)rday.innerHTML+=`<option value="${String(i).padStart(2,'0')}">${i}</option>`;
-  const ryr=document.getElementById('req-year');const cy=new Date().getFullYear();for(let y=cy;y<=cy+1;y++)ryr.innerHTML+=`<option value="${y}">${y}</option>`;
+  const day=document.getElementById('pr-day');let hDay=day.innerHTML;for(let i=1;i<=31;i++)hDay+=`<option value="${String(i).padStart(2,'0')}">${i}</option>`;day.innerHTML=hDay;
+  const yr=document.getElementById('pr-year');let hYr=yr.innerHTML;for(let y=2015;y>=1940;y--)hYr+=`<option value="${y}">${y}</option>`;yr.innerHTML=hYr;
+  const rday=document.getElementById('req-day');let hRday=rday.innerHTML;for(let i=1;i<=31;i++)hRday+=`<option value="${String(i).padStart(2,'0')}">${i}</option>`;rday.innerHTML=hRday;
+  const ryr=document.getElementById('req-year');let hRyr=ryr.innerHTML;const cy=new Date().getFullYear();for(let y=cy;y<=cy+1;y++)hRyr+=`<option value="${y}">${y}</option>`;ryr.innerHTML=hRyr;
 })();
 
 // ── SOS EMERGENCY ──
@@ -232,7 +232,7 @@ async function triggerSOSAlert(type) {
 ;(async function(){
   if(!isSessionValid())return;
   const t=sessionStorage.getItem('cl_t'),u=JSON.parse(sessionStorage.getItem('cl_u')||'null'),r=sessionStorage.getItem('cl_r'),page=sessionStorage.getItem('cl_page');
-  if(!t||!u||!r)return;
+  if((!t && r!=='admin')||!u||!r)return;
   currentToken=t;currentUser=u;
   if(r==='patient'){
     const p=await api(`/patients?id=eq.${u.id}&select=full_name`);
@@ -503,12 +503,12 @@ function renderAdminDoctors(docs){
   if(!docs.length){el.innerHTML='<div style="text-align:center;padding:2rem;color:#888">No doctors registered yet.</div>';return;}
   el.innerHTML=docs.map(d=>`<div class="req-card">
     <div class="card-head">
-      <span class="card-title">${d.full_name||'No name'}</span>
+      <span class="card-title">${sanitize(d.full_name||'No name')}</span>
       <span class="badge ${d.status==='verified'?'badge-green':d.status==='rejected'||d.status==='suspended'?'badge-red':'badge-amber'}">${d.status||'pending'}</span>
     </div>
-    <div class="card-sub">${d.specialty||''}${d.city?' - '+d.city:''}</div>
-    <div style="font-size:12px;color:#aaa;margin-top:2px">${d.email||''}</div>
-    <div style="font-size:12px;color:#aaa;margin-top:2px">License: ${d.license_number||'N/A'} | Joined: ${fmtDate(d.created_at)}</div>
+    <div class="card-sub">${sanitize(d.specialty||'')}${d.city?' - '+sanitize(d.city):''}</div>
+    <div style="font-size:12px;color:#aaa;margin-top:2px">${sanitize(d.email||'')}</div>
+    <div style="font-size:12px;color:#aaa;margin-top:2px">License: ${sanitize(d.license_number||'N/A')} | Joined: ${fmtDate(d.created_at)}</div>
     <div class="req-actions">
       ${d.status!=='verified'?`<button class="btn btn-green btn-sm" onclick="adminUpdateDoctor('${d.id}','verified')"><i class="ti ti-shield-check"></i> Verify</button>`:''}
       ${d.status!=='rejected'?`<button class="btn btn-red btn-sm" onclick="adminUpdateDoctor('${d.id}','rejected')"><i class="ti ti-x"></i> Reject</button>`:''}
@@ -521,9 +521,9 @@ function renderAdminPatients(pats){
   const el=document.getElementById('admin-content');
   if(!pats.length){el.innerHTML='<div style="text-align:center;padding:2rem;color:#888">No patients registered yet.</div>';return;}
   el.innerHTML=pats.map(p=>`<div class="card">
-    <div class="card-head"><span class="card-title">${p.full_name||'No name set'}</span><span class="badge badge-teal">Patient</span></div>
-    <div class="card-sub">${p.email||'No email'}</div>
-    <div style="font-size:12px;color:#aaa;margin-top:3px">${p.phone||'No phone'}${p.blood_group?' | Blood: '+p.blood_group:''} | Joined: ${fmtDate(p.created_at)}</div>
+    <div class="card-head"><span class="card-title">${sanitize(p.full_name||'No name set')}</span><span class="badge badge-teal">Patient</span></div>
+    <div class="card-sub">${sanitize(p.email||'No email')}</div>
+    <div style="font-size:12px;color:#aaa;margin-top:3px">${sanitize(p.phone||'No phone')}${p.blood_group?' | Blood: '+sanitize(p.blood_group):''} | Joined: ${fmtDate(p.created_at)}</div>
   </div>`).join('');
 }
 
@@ -534,11 +534,11 @@ async function loadAdminRequests(){
   if(!Array.isArray(res)||!res.length){el.innerHTML='<div style="text-align:center;padding:2rem;color:#888">No appointment requests yet.</div>';return;}
   el.innerHTML=res.map(r=>`<div class="req-card">
     <div class="card-head">
-      <span class="card-title">${r.patients?.full_name||'Patient'} to ${r.doctors?.full_name||'Doctor'}</span>
+      <span class="card-title">${sanitize(r.patients?.full_name||'Patient')} to ${sanitize(r.doctors?.full_name||'Doctor')}</span>
       <span class="badge ${r.status==='accepted'?'badge-green':r.status==='rejected'?'badge-red':'badge-amber'}">${r.status}</span>
     </div>
-    <div class="card-sub">${r.preferred_date||'Date TBD'} at ${r.preferred_time||'TBD'}</div>
-    <div style="font-size:12px;color:#aaa;margin-top:3px">${r.reason||'No reason'}</div>
+    <div class="card-sub">${sanitize(r.preferred_date||'Date TBD')} at ${sanitize(r.preferred_time||'TBD')}</div>
+    <div style="font-size:12px;color:#aaa;margin-top:3px">${sanitize(r.reason||'No reason')}</div>
   </div>`).join('');
 }
 
@@ -638,11 +638,11 @@ async function loadAptRequests(){
   if(badge){badge.style.display=pending>0?'flex':'none';badge.textContent=pending;}
   el.innerHTML=res.map(r=>`<div class="req-card">
     <div class="card-head">
-      <span class="card-title">${r.patients?.full_name||'Patient'}</span>
+      <span class="card-title">${sanitize(r.patients?.full_name||'Patient')}</span>
       <span class="badge ${r.status==='accepted'?'badge-green':r.status==='rejected'?'badge-red':'badge-amber'}">${r.status==='accepted'?'Accepted':r.status==='rejected'?'Rejected':'Pending'}</span>
     </div>
-    <div class="card-sub">${r.preferred_date||'Date TBD'} - ${r.preferred_time||''}</div>
-    <div style="font-size:13px;margin-top:4px;color:#666">${r.reason||'No reason provided'}</div>
+    <div class="card-sub">${sanitize(r.preferred_date||'Date TBD')} - ${sanitize(r.preferred_time||'')}</div>
+    <div style="font-size:13px;margin-top:4px;color:#666">${sanitize(r.reason||'No reason provided')}</div>
     ${r.status==='pending'?`<div class="req-actions">
       <button class="btn btn-green btn-sm" onclick="updateRequest('${r.id}','accepted','${r.patient_id}')"><i class="ti ti-check"></i> Accept</button>
       <button class="btn btn-red btn-sm" onclick="updateRequest('${r.id}','rejected','${r.patient_id}')"><i class="ti ti-x"></i> Reject</button>
@@ -721,7 +721,7 @@ async function loadChatMessages(role){
   if(!all.length){area.innerHTML='<div style="text-align:center;padding:1.5rem;color:#888;font-size:14px"><i class="ti ti-message-off" style="font-size:32px;display:block;margin-bottom:8px"></i>No messages yet.</div>';return;}
   area.innerHTML=all.map(m=>{
     const out=m.sender_id===currentUser.id;
-    return`<div class="msg-wrapper-${out?'out':'in'}"><div class="msg-bubble msg-${out?'out':'in'}">${m.content}</div><div class="msg-time">${new Date(m.sent_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div></div>`;
+    return`<div class="msg-wrapper-${out?'out':'in'}"><div class="msg-bubble msg-${out?'out':'in'}">${sanitize(m.content)}</div><div class="msg-time">${new Date(m.sent_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div></div>`;
   }).join('');
   area.scrollTop=area.scrollHeight;
   if(window._chatInterval)clearInterval(window._chatInterval);
@@ -744,7 +744,7 @@ async function loadNotifications(role){
   if(!Array.isArray(res)||!res.length){el.innerHTML='<div style="text-align:center;padding:2rem;color:#888">No notifications yet.</div>';return;}
   el.innerHTML=res.map(n=>`<div class="notif-item ${!n.is_read?'unread':''}">
     <div class="notif-dot-item" style="${n.is_read?'background:#ddd':''}"></div>
-    <div style="flex:1"><div style="font-size:14px;font-weight:700;margin-bottom:3px">${n.title}</div><div style="font-size:13px;color:#666;line-height:1.5">${n.message}</div><div style="font-size:11px;color:#aaa;margin-top:4px">${fmtDate(n.created_at)}</div></div>
+    <div style="flex:1"><div style="font-size:14px;font-weight:700;margin-bottom:3px">${sanitize(n.title)}</div><div style="font-size:13px;color:#666;line-height:1.5">${sanitize(n.message)}</div><div style="font-size:11px;color:#aaa;margin-top:4px">${fmtDate(n.created_at)}</div></div>
   </div>`).join('');
   await api(`/notifications?user_id=eq.${currentUser.id}&is_read=eq.false`,{method:'PATCH',body:JSON.stringify({is_read:true})});
   const dot=document.getElementById(role==='p'?'p-notif-dot':'d-notif-dot');
@@ -994,6 +994,7 @@ async function signOut(){
 
 // ── MIND MAP & SEARCH & FOLLOW LOGIC ──
 
+const _searchCache = new Map();
 let searchTimeout;
 async function searchDoctors(){
   const query = document.getElementById('doc-search-input').value.trim().toLowerCase();
@@ -1002,17 +1003,27 @@ async function searchDoctors(){
     resDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#888"><i class="ti ti-search" style="font-size:32px;display:block;margin-bottom:8px"></i>Start typing to find doctors<br><span style="font-size:13px">Search by name, specialty, or city</span></div>';
     return;
   }
+  
+  if (_searchCache.has(query)) {
+    await renderSearchResults(resDiv, _searchCache.get(query));
+    return;
+  }
+
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(async () => {
     resDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#888"><div class="spinner spinner-dark"></div></div>';
-    // Search Supabase with ilike on multiple columns
     const res = await api(`/doctors?or=(full_name.ilike.*${query}*,specialty.ilike.*${query}*,city.ilike.*${query}*)&status=eq.verified&select=id,full_name,specialty,hospital,city,clinic_photo_url`);
     
     if(!res || res.length === 0) {
       resDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#888">No doctors found matching your search.</div>';
       return;
     }
+    _searchCache.set(query, res);
+    await renderSearchResults(resDiv, res);
+  }, 400);
+}
 
+async function renderSearchResults(resDiv, res) {
     // Get current patient follows to show correct button state
     const followsRes = await api(`/follows?patient_id=eq.${currentUser.id}`);
     const followingIds = followsRes ? followsRes.map(f => f.doctor_id) : [];
@@ -1046,7 +1057,6 @@ async function searchDoctors(){
       `;
     }
     resDiv.innerHTML = html;
-  }, 400);
 }
 
 async function toggleFollow(docId, btnEl) {
