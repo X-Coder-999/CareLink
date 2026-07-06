@@ -331,14 +331,10 @@
 <!-- MESSAGES PATIENT -->
 <div id="s-p-messages" class="screen">
   <div class="nav"><div class="nav-title" style="color:var(--amber)"><i class="ti ti-message-circle"></i> Messages</div></div>
-  <div class="video-bar">
-    <button class="btn btn-meet btn-sm" onclick="window.open('https://meet.google.com/new','_blank')"><i class="ti ti-brand-google"></i> Google Meet</button>
-    <button class="btn btn-zoom btn-sm" onclick="window.open('https://zoom.us/start/videomeeting','_blank')"><i class="ti ti-video"></i> Zoom</button>
-  </div>
-  <div class="msg-area" id="p-msg-area"><div style="text-align:center;padding:1.5rem;color:#888;font-size:14px"><i class="ti ti-message-off" style="font-size:32px;display:block;margin-bottom:8px"></i>No messages yet</div></div>
-  <div class="msg-input-row">
-    <input id="p-msg-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMsg('p')">
-    <button class="btn btn-teal btn-sm" style="width:auto;border-radius:24px;padding:11px 15px" onclick="sendMsg('p')"><i class="ti ti-send"></i></button>
+  <div class="msg-area" style="display:flex;align-items:center;justify-content:center;height:60vh;flex-direction:column;gap:12px;color:#888;background:#f8f9fa;">
+    <i class="ti ti-message-off" style="font-size:48px;"></i>
+    <div style="font-size:18px;font-weight:600;color:#555;">World Chat Disabled</div>
+    <div style="font-size:14px;text-align:center;max-width:280px;line-height:1.5;">The global community chat has been removed. Private 1-on-1 messaging is coming soon!</div>
   </div>
   <div class="bottom-nav">
     <div class="bn-item" onclick="pTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
@@ -570,14 +566,10 @@
 <!-- MESSAGES DOCTOR -->
 <div id="s-d-messages" class="screen">
   <div class="nav"><div class="nav-title" style="color:var(--teal)"><i class="ti ti-message-circle"></i> Messages</div></div>
-  <div class="video-bar">
-    <button class="btn btn-meet btn-sm" onclick="window.open('https://meet.google.com/new','_blank')"><i class="ti ti-brand-google"></i> Google Meet</button>
-    <button class="btn btn-zoom btn-sm" onclick="window.open('https://zoom.us/start/videomeeting','_blank')"><i class="ti ti-video"></i> Zoom</button>
-  </div>
-  <div class="msg-area" id="d-msg-area"><div style="text-align:center;padding:1.5rem;color:#888;font-size:14px"><i class="ti ti-message-off" style="font-size:32px;display:block;margin-bottom:8px"></i>No messages yet</div></div>
-  <div class="msg-input-row">
-    <input id="d-msg-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMsg('d')">
-    <button class="btn btn-purple btn-sm" style="width:auto;border-radius:24px;padding:11px 15px" onclick="sendMsg('d')"><i class="ti ti-send"></i></button>
+  <div class="msg-area" style="display:flex;align-items:center;justify-content:center;height:60vh;flex-direction:column;gap:12px;color:#888;background:#f8f9fa;">
+    <i class="ti ti-message-off" style="font-size:48px;"></i>
+    <div style="font-size:18px;font-weight:600;color:#555;">World Chat Disabled</div>
+    <div style="font-size:14px;text-align:center;max-width:280px;line-height:1.5;">The global community chat has been removed. Private 1-on-1 messaging is coming soon!</div>
   </div>
   <div class="bottom-nav">
     <div class="bn-item" onclick="dTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
