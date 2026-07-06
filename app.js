@@ -143,6 +143,7 @@ function pTab(tab){
   if(tab==='notifications')loadNotifications('p');
   if(tab==='profile')loadPatientProfile();
   if(tab==='specialists')loadMySpecialists();
+  if(tab==='search')searchClinics();
   if(tab==='home')drawMindMap();
 }
 
@@ -1005,13 +1006,15 @@ function _calcDist(lat1,lng1,lat2,lng2) {
 }
 
 async function searchClinics() {
-  const query = document.getElementById('doc-search-input').value.trim();
+  let query = document.getElementById('doc-search-input').value.trim();
   const resDiv = document.getElementById('search-results');
+  
+  // If search bar is empty, automatically search for nearby clinics
   if (!query || query.length < 2) {
-    resDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#888"><i class="ti ti-search" style="font-size:32px;display:block;margin-bottom:8px"></i>Search for any clinic near you</div>';
-    return;
+    query = 'clinic';
   }
-  resDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#888"><div class="spinner spinner-dark"></div></div>';
+  
+  resDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#888"><div class="spinner spinner-dark"></div><div style="margin-top:12px;font-size:13px">Finding nearby clinics...</div></div>';
 
   const loc = await _getPatientLocation();
   if (!window.google) { resDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#888">Google Maps failed to load.</div>'; return; }
@@ -1170,9 +1173,12 @@ async function loadMySpecialists() {
         </div>
         <div class="spec-info">
           <div class="spec-name">${sanitize(d.full_name||'Doctor')}</div>
-          <div class="spec-detail">${sanitize(d.specialty||'')} • ${sanitize(d.city||'')}</div>
+          <div class="spec-detail">${sanitize(d.specialty||'')} &bull; ${sanitize(d.city||'')}</div>
         </div>
-        <button class="btn-outline btn-sm" style="padding:6px 12px;border-radius:20px;border-color:var(--coral);color:var(--coral)" onclick="toggleFollow('${d.id}', this); setTimeout(()=>loadMySpecialists(), 500)">Unfollow</button>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-purple btn-sm" style="padding:6px 10px;border-radius:20px;" onclick="openRequest('${d.id}', '${sanitize(d.full_name)}')"><i class="ti ti-calendar-plus"></i></button>
+          <button class="btn-outline btn-sm" style="padding:6px 10px;border-radius:20px;border-color:var(--coral);color:var(--coral)" onclick="toggleFollow('${d.id}', this); setTimeout(()=>loadMySpecialists(), 500)"><i class="ti ti-x"></i></button>
+        </div>
       </div>
     `;
   }
