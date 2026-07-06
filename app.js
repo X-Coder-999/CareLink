@@ -1024,11 +1024,15 @@ async function searchClinics() {
     _placesService = new google.maps.places.PlacesService(dummyDiv);
   }
 
-  const request = { query: query + ' clinic doctor hospital', ...(loc ? {location: new google.maps.LatLng(loc.lat, loc.lng), radius: 15000} : {}) };
+  const finalQuery = (query.toLowerCase() === 'clinic') ? 'clinics and hospitals' : query;
+  const request = { 
+    query: finalQuery, 
+    ...(loc ? {location: new google.maps.LatLng(loc.lat, loc.lng), radius: 15000} : {}) 
+  };
 
   _placesService.textSearch(request, (results, status) => {
     if (status !== google.maps.places.PlacesServiceStatus.OK || !results.length) {
-      resDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#888">No clinics found. Try a different search.</div>';
+      resDiv.innerHTML = `<div style="text-align:center;padding:2rem;color:#888">No clinics found near you.<br><br><small>Debug Status: ${status}</small><br><small>If status is REQUEST_DENIED, enable "Places API" in Google Cloud.</small></div>`;
       return;
     }
 
