@@ -265,7 +265,7 @@ function setDoctorDash(d){
   document.getElementById('d-dash-spec').textContent=`${d.specialty||''}${d.city?' - '+d.city:''}`;
   const badge=document.getElementById('d-status-badge'),vblock=document.getElementById('d-verify-block'),vcard=document.getElementById('d-verify-card');
   if(d.status==='verified'){badge.className='badge badge-green';badge.innerHTML='<i class="ti ti-shield-check"></i> Verified';vblock.style.display='none';}
-  else{badge.className='badge badge-amber';badge.textContent='Pending';vblock.style.display='block';vcard.className='verify-card pending';document.getElementById('d-verify-title').textContent='License Verified';document.getElementById('d-verify-msg').textContent='Your MCI format is valid. You are active on CareLink.';}
+  else{badge.className='badge badge-amber';badge.textContent='Pending';vblock.style.display='block';vcard.className='verify-card pending';document.getElementById('d-verify-title').textContent='License Verified';document.getElementById('d-verify-msg').textContent='Your MCI format is valid. You are active on NexylstCare.';}
   if(d.city)document.getElementById('dp-city').value=d.city;
   if(d.address)document.getElementById('dp-address').value=d.address;
   if(d.max_appointments)document.getElementById('dp-maxapt').value=d.max_appointments;
@@ -456,8 +456,8 @@ async function adminLogin(){
   if(hash===ADMIN_PASS_HASH){
     document.getElementById('admin-err').style.display='none';
     currentToken = null; // Use anon key for admin API calls
-    currentUser = {id: 'admin', email: 'admin@carelink.com'};
-    saveSession('', {id: 'admin', email: 'admin@carelink.com'}, 'admin');
+    currentUser = {id: 'admin', email: 'admin@nexylstcare.com'};
+    saveSession('', {id: 'admin', email: 'admin@nexylstcare.com'}, 'admin');
     pageHistory.push('s-admin-dash');
     _showScreen('s-admin-dash');
     loadAdminData();
@@ -544,7 +544,7 @@ async function loadAdminRequests(){
 
 async function adminUpdateDoctor(id,status){
   await api(`/doctors?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({status,verified_at:status==='verified'?new Date().toISOString():null,is_active:status!=='suspended'})});
-  const msgs={verified:{title:'License Verified',message:'Your MCI license has been verified. You are now fully active on CareLink.',type:'success'},rejected:{title:'License Rejected',message:'Your license verification was unsuccessful. Please contact support.',type:'danger'},suspended:{title:'Account Suspended',message:'Your account has been suspended. Please contact CareLink support.',type:'danger'}};
+  const msgs={verified:{title:'License Verified',message:'Your MCI license has been verified. You are now fully active on NexylstCare.',type:'success'},rejected:{title:'License Rejected',message:'Your license verification was unsuccessful. Please contact support.',type:'danger'},suspended:{title:'Account Suspended',message:'Your account has been suspended. Please contact NexylstCare support.',type:'danger'}};
   if(msgs[status])await api('/notifications',{method:'POST',body:JSON.stringify({user_id:id,...msgs[status]})});
   showToast(status==='verified'?'Doctor verified!':status==='rejected'?'Doctor rejected.':'Doctor suspended.');
   await loadAdminData();
@@ -961,8 +961,8 @@ async function saveDoctorProfile(){
 
 function showPolicy(type){
   const content={
-    terms:`<h3 style="margin-bottom:12px">Terms of Service</h3><p style="font-size:13px;line-height:1.7;color:#444">By using CareLink you agree to use this platform only for legitimate healthcare purposes. CareLink is not liable for medical decisions made based on the AI symptom checker. The symptom checker provides guidance only and is not a substitute for professional medical advice. Doctors on CareLink are individually responsible for their medical practice. All data is stored securely and handled in compliance with applicable Indian data protection laws including the DPDP Act 2023.</p>`,
-    privacy:`<h3 style="margin-bottom:12px">Privacy Policy</h3><p style="font-size:13px;line-height:1.7;color:#444">CareLink collects personal and health information solely to provide healthcare coordination services. Your data is stored securely on Supabase servers. We do not sell or share your personal data with third parties. Health records are accessible only to you and the doctors you interact with. You may request deletion of your account and data at any time by contacting support. We comply with the Digital Personal Data Protection Act 2023 (India).</p>`
+    terms:`<h3 style="margin-bottom:12px">Terms of Service</h3><p style="font-size:13px;line-height:1.7;color:#444">By using NexylstCare you agree to use this platform only for legitimate healthcare purposes. NexylstCare is not liable for medical decisions made based on the AI symptom checker. The symptom checker provides guidance only and is not a substitute for professional medical advice. Doctors on NexylstCare are individually responsible for their medical practice. All data is stored securely and handled in compliance with applicable Indian data protection laws including the DPDP Act 2023.</p>`,
+    privacy:`<h3 style="margin-bottom:12px">Privacy Policy</h3><p style="font-size:13px;line-height:1.7;color:#444">NexylstCare collects personal and health information solely to provide healthcare coordination services. Your data is stored securely on Supabase servers. We do not sell or share your personal data with third parties. Health records are accessible only to you and the doctors you interact with. You may request deletion of your account and data at any time by contacting support. We comply with the Digital Personal Data Protection Act 2023 (India).</p>`
   };
   const modal=document.createElement('div');
   modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
