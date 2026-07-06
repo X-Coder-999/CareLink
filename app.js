@@ -836,43 +836,73 @@ async function loadPatientRecords(tab){
 }
 
 // ── NEARBY ──
+let _gmap, _gMarkers=[];
 async function findNearby(){
   const el=document.getElementById('gps-status'),btn=document.getElementById('gps-btn');
+  const nearbyList=document.getElementById('nearby-list'),mapDiv=document.getElementById('map');
   el.className='alert alert-info';el.innerHTML='<i class="ti ti-map-pin"></i> Getting your location...';btn.disabled=true;
   if(!navigator.geolocation){el.className='alert alert-danger';el.innerHTML='<i class="ti ti-alert-circle"></i> Location not supported.';btn.disabled=false;return;}
   navigator.geolocation.getCurrentPosition(async pos=>{
     const {latitude:lat,longitude:lng}=pos.coords;
-    el.className='alert alert-success';el.innerHTML='<i class="ti ti-check"></i> Location found! Showing nearby doctors.';btn.disabled=false;
-    const docs=await api('/doctors?select=id,full_name,specialty,city,address,status,max_appointments,lat,lng&status=eq.verified');
-    const nearby=document.getElementById('nearby-list');
-    if(!Array.isArray(docs)||!docs.length){nearby.innerHTML='<div style="text-align:center;padding:2rem;color:#888">No verified doctors found.</div>';return;}
+    el.className='alert alert-success';el.innerHTML='<i class="ti ti-check"></i> Location found! Showing nearby doctors on map.';btn.disabled=false;
+    nearbyList.style.display='none';
+    mapDiv.style.display='block';
+    
+    if(!window.google){el.innerHTML='Map failed to load.';return;}
+    if(!_gmap) {
+      _gmap = new google.maps.Map(mapDiv, {
+        center: { lat, lng }, zoom: 12, disableDefaultUI: true, zoomControl: true,
+        styles: [{featureType:'poi',stylers:[{visibility:'off'}]}]
+      });
+    } else {
+      _gmap.setCenter({ lat, lng });
+    }
+    
+    new google.maps.Marker({
+      position: { lat, lng }, map: _gmap, title: 'You are here',
+      icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: '#0F6E56', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 2 }
+    });
+
+    const docs=await api('/doctors?select=id,full_name,specialty,city,address,status,max_appointments,lat,lng,clinic_photo_url&status=eq.verified');
+    if(!Array.isArray(docs)||!docs.length){showToast('No verified doctors found.');return;}
+    
+    _gMarkers.forEach(m=>m.setMap(null)); _gMarkers=[];
+    const infoWindow = new google.maps.InfoWindow();
+
     const withCoords=await Promise.all(docs.map(async d=>{
       if(d.lat&&d.lng)return d;
       if(!d.city)return d;
       try{
-        const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(d.address||d.city)}&format=json&limit=1`);
+        const r=await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(d.address||d.city)}&key=AIzaSyBTfvKFOUQbcG350XDdT3Qo4bCHjZnF_sU`);
         const data=await r.json();
-        if(data[0]){const nlat=parseFloat(data[0].lat),nlng=parseFloat(data[0].lon);await api(`/doctors?id=eq.${d.id}`,{method:'PATCH',body:JSON.stringify({lat:nlat,lng:nlng})});return{...d,lat:nlat,lng:nlng};}
+        if(data.status==='OK'){
+          const loc=data.results[0].geometry.location;
+          await api(`/doctors?id=eq.${d.id}`,{method:'PATCH',body:JSON.stringify({lat:loc.lat,lng:loc.lng})});
+          return{...d,lat:loc.lat,lng:loc.lng};
+        }
       }catch(e){}
       return d;
     }));
-    const withDist=withCoords.map(d=>{
-      let dist=null;
-      if(d.lat&&d.lng){const R=6371,dLat=(d.lat-lat)*Math.PI/180,dLng=(d.lng-lng)*Math.PI/180,a=Math.sin(dLat/2)**2+Math.cos(lat*Math.PI/180)*Math.cos(d.lat*Math.PI/180)*Math.sin(dLng/2)**2;dist=R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
-      return{...d,dist};
-    }).sort((a,b)=>(a.dist??999)-(b.dist??999));
-    nearby.innerHTML=withDist.map(d=>`<div class="nearby-card">
-      <div class="avatar" style="width:44px;height:44px;font-size:13px;background:var(--purple-l);color:var(--purple-d)">${d.full_name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>
-      <div style="flex:1">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
-          <span style="font-size:14px;font-weight:700">${d.full_name}</span>
-          <span class="distance-badge"><i class="ti ti-map-pin"></i> ${d.dist!==null?d.dist<1?Math.round(d.dist*1000)+'m':d.dist.toFixed(1)+'km':'N/A'}</span>
-        </div>
-        <div style="font-size:13px;color:#888">${d.specialty||''}${d.city?' - '+d.city:''}</div>
-        ${d.address?`<div style="font-size:12px;color:#aaa;margin-top:2px">${d.address}</div>`:''}
-        <button class="btn btn-teal btn-sm" style="margin-top:8px" onclick="openRequest('${d.id}','${d.full_name}')"><i class="ti ti-calendar-plus"></i> Request appointment</button>
-      </div>
-    </div>`).join('');
+
+    withCoords.forEach(d=>{
+      if(!d.lat||!d.lng)return;
+      const marker = new google.maps.Marker({
+        position: { lat: d.lat, lng: d.lng }, map: _gmap, title: d.full_name
+      });
+      marker.addListener('click', () => {
+        const photo = d.clinic_photo_url ? `<img src="${sanitize(d.clinic_photo_url)}" style="width:100%;height:80px;object-fit:cover;border-radius:8px;margin-bottom:8px;">` : '';
+        const content = `<div style="padding:4px;max-width:200px;font-family:inherit;">
+          <div style="font-weight:700;font-size:15px;margin-bottom:4px;color:#333;">${sanitize(d.full_name)}</div>
+          <div style="color:#666;font-size:13px;margin-bottom:8px;">${sanitize(d.specialty)}</div>
+          ${photo}
+          <div style="font-size:12px;color:#888;margin-bottom:12px;"><i class="ti ti-map-pin"></i> ${sanitize(d.address||d.city)}</div>
+          <button class="btn btn-purple btn-sm" style="width:100%" onclick="openRequest('${d.id}', '${sanitize(d.full_name)}')">Book Appt</button>
+        </div>`;
+        infoWindow.setContent(content);
+        infoWindow.open(_gmap, marker);
+      });
+      _gMarkers.push(marker);
+    });
   },()=>{el.className='alert alert-danger';el.innerHTML='<i class="ti ti-alert-circle"></i> Could not get location. Please allow location access.';btn.disabled=false;});
 }
 
@@ -954,7 +984,35 @@ async function loadPatientProfile(){
 
 async function saveDoctorProfile(){
   if(!currentUser)return;
-  await api(`/doctors?id=eq.${currentUser.id}`,{method:'PATCH',body:JSON.stringify({city:document.getElementById('dp-city').value,address:document.getElementById('dp-address').value,clinic_photo_url:document.getElementById('dp-photo').value,max_appointments:parseInt(document.getElementById('dp-maxapt').value)||10,bio:document.getElementById('dp-bio').value})});
+  const city = document.getElementById('dp-city').value;
+  const address = document.getElementById('dp-address').value;
+  let lat = null, lng = null;
+  
+  if (city || address) {
+    try {
+      const r = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address || city)}&key=AIzaSyBTfvKFOUQbcG350XDdT3Qo4bCHjZnF_sU`);
+      const data = await r.json();
+      if (data.status === 'OK') {
+        lat = data.results[0].geometry.location.lat;
+        lng = data.results[0].geometry.location.lng;
+      }
+    } catch(e) {}
+  }
+  
+  const payload = {
+    city,
+    address,
+    clinic_photo_url: document.getElementById('dp-photo').value,
+    max_appointments: parseInt(document.getElementById('dp-maxapt').value)||10,
+    bio: document.getElementById('dp-bio').value
+  };
+  
+  if (lat && lng) {
+    payload.lat = lat;
+    payload.lng = lng;
+  }
+  
+  await api(`/doctors?id=eq.${currentUser.id}`,{method:'PATCH',body:JSON.stringify(payload)});
   const ok=document.getElementById('dp-ok');ok.style.display='flex';setTimeout(()=>ok.style.display='none',3000);
   showToast('Profile updated!');
 }
