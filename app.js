@@ -835,76 +835,7 @@ async function loadPatientRecords(tab){
   }
 }
 
-// ── NEARBY ──
-let _gmap, _gMarkers=[];
-async function findNearby(){
-  const el=document.getElementById('gps-status'),btn=document.getElementById('gps-btn');
-  const nearbyList=document.getElementById('nearby-list'),mapDiv=document.getElementById('map');
-  el.className='alert alert-info';el.innerHTML='<i class="ti ti-map-pin"></i> Getting your location...';btn.disabled=true;
-  if(!navigator.geolocation){el.className='alert alert-danger';el.innerHTML='<i class="ti ti-alert-circle"></i> Location not supported.';btn.disabled=false;return;}
-  navigator.geolocation.getCurrentPosition(async pos=>{
-    const {latitude:lat,longitude:lng}=pos.coords;
-    el.className='alert alert-success';el.innerHTML='<i class="ti ti-check"></i> Location found! Showing nearby doctors on map.';btn.disabled=false;
-    nearbyList.style.display='none';
-    mapDiv.style.display='block';
-    
-    if(!window.google){el.innerHTML='Map failed to load.';return;}
-    if(!_gmap) {
-      _gmap = new google.maps.Map(mapDiv, {
-        center: { lat, lng }, zoom: 12, disableDefaultUI: true, zoomControl: true,
-        styles: [{featureType:'poi',stylers:[{visibility:'off'}]}]
-      });
-    } else {
-      _gmap.setCenter({ lat, lng });
-    }
-    
-    new google.maps.Marker({
-      position: { lat, lng }, map: _gmap, title: 'You are here',
-      icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: '#0F6E56', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 2 }
-    });
-
-    const docs=await api('/doctors?select=id,full_name,specialty,city,address,status,max_appointments,lat,lng,clinic_photo_url&status=eq.verified');
-    if(!Array.isArray(docs)||!docs.length){showToast('No verified doctors found.');return;}
-    
-    _gMarkers.forEach(m=>m.setMap(null)); _gMarkers=[];
-    const infoWindow = new google.maps.InfoWindow();
-
-    const withCoords=await Promise.all(docs.map(async d=>{
-      if(d.lat&&d.lng)return d;
-      if(!d.city)return d;
-      try{
-        const r=await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(d.address||d.city)}&key=AIzaSyBTfvKFOUQbcG350XDdT3Qo4bCHjZnF_sU`);
-        const data=await r.json();
-        if(data.status==='OK'){
-          const loc=data.results[0].geometry.location;
-          await api(`/doctors?id=eq.${d.id}`,{method:'PATCH',body:JSON.stringify({lat:loc.lat,lng:loc.lng})});
-          return{...d,lat:loc.lat,lng:loc.lng};
-        }
-      }catch(e){}
-      return d;
-    }));
-
-    withCoords.forEach(d=>{
-      if(!d.lat||!d.lng)return;
-      const marker = new google.maps.Marker({
-        position: { lat: d.lat, lng: d.lng }, map: _gmap, title: d.full_name
-      });
-      marker.addListener('click', () => {
-        const photo = d.clinic_photo_url ? `<img src="${sanitize(d.clinic_photo_url)}" style="width:100%;height:80px;object-fit:cover;border-radius:8px;margin-bottom:8px;">` : '';
-        const content = `<div style="padding:4px;max-width:200px;font-family:inherit;">
-          <div style="font-weight:700;font-size:15px;margin-bottom:4px;color:#333;">${sanitize(d.full_name)}</div>
-          <div style="color:#666;font-size:13px;margin-bottom:8px;">${sanitize(d.specialty)}</div>
-          ${photo}
-          <div style="font-size:12px;color:#888;margin-bottom:12px;"><i class="ti ti-map-pin"></i> ${sanitize(d.address||d.city)}</div>
-          <button class="btn btn-purple btn-sm" style="width:100%" onclick="openRequest('${d.id}', '${sanitize(d.full_name)}')">Book Appt</button>
-        </div>`;
-        infoWindow.setContent(content);
-        infoWindow.open(_gmap, marker);
-      });
-      _gMarkers.push(marker);
-    });
-  },()=>{el.className='alert alert-danger';el.innerHTML='<i class="ti ti-alert-circle"></i> Could not get location. Please allow location access.';btn.disabled=false;});
-}
+// ── NEARBY (removed) ──
 
 // ── SYMPTOM CHECKER ──
 function toggleSymptom(el){el.classList.toggle('sel')}
@@ -1054,67 +985,141 @@ async function signOut(){
 
 const _searchCache = new Map();
 let searchTimeout;
-async function searchDoctors(){
-  const query = document.getElementById('doc-search-input').value.trim().toLowerCase();
-  const resDiv = document.getElementById('search-results');
-  if(!query || query.length < 2) {
-    resDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#888"><i class="ti ti-search" style="font-size:32px;display:block;margin-bottom:8px"></i>Start typing to find doctors<br><span style="font-size:13px">Search by name, specialty, or city</span></div>';
-    return;
-  }
-  
-  if (_searchCache.has(query)) {
-    await renderSearchResults(resDiv, _searchCache.get(query));
-    return;
-  }
+let _placesService, _patientLat, _patientLng;
 
-  clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(async () => {
-    resDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#888"><div class="spinner spinner-dark"></div></div>';
-    const res = await api(`/doctors?or=(full_name.ilike.*${query}*,specialty.ilike.*${query}*,city.ilike.*${query}*)&status=eq.verified&select=id,full_name,specialty,hospital,city,clinic_photo_url`);
-    
-    if(!res || res.length === 0) {
-      resDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#888">No doctors found matching your search.</div>';
-      return;
-    }
-    _searchCache.set(query, res);
-    await renderSearchResults(resDiv, res);
-  }, 400);
+function _getPatientLocation() {
+  return new Promise((resolve) => {
+    if (_patientLat && _patientLng) return resolve({lat: _patientLat, lng: _patientLng});
+    if (!navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      pos => { _patientLat = pos.coords.latitude; _patientLng = pos.coords.longitude; resolve({lat: _patientLat, lng: _patientLng}); },
+      () => resolve(null), {timeout: 5000}
+    );
+  });
 }
 
-async function renderSearchResults(resDiv, res) {
-    // Get current patient follows to show correct button state
-    const followsRes = await api(`/follows?patient_id=eq.${currentUser.id}`);
-    const followingIds = followsRes ? followsRes.map(f => f.doctor_id) : [];
+function _calcDist(lat1,lng1,lat2,lng2) {
+  const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+async function searchClinics() {
+  const query = document.getElementById('doc-search-input').value.trim();
+  const resDiv = document.getElementById('search-results');
+  if (!query || query.length < 2) {
+    resDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#888"><i class="ti ti-search" style="font-size:32px;display:block;margin-bottom:8px"></i>Search for any clinic near you</div>';
+    return;
+  }
+  resDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#888"><div class="spinner spinner-dark"></div></div>';
+
+  const loc = await _getPatientLocation();
+  if (!window.google) { resDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#888">Google Maps failed to load.</div>'; return; }
+
+  if (!_placesService) {
+    const dummyDiv = document.createElement('div');
+    _placesService = new google.maps.places.PlacesService(dummyDiv);
+  }
+
+  const request = { query: query + ' clinic doctor hospital', ...(loc ? {location: new google.maps.LatLng(loc.lat, loc.lng), radius: 15000} : {}) };
+
+  _placesService.textSearch(request, (results, status) => {
+    if (status !== google.maps.places.PlacesServiceStatus.OK || !results.length) {
+      resDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#888">No clinics found. Try a different search.</div>';
+      return;
+    }
 
     let html = '';
-    for(const d of res) {
-      const isFollowing = followingIds.includes(d.id);
-      const btnClass = isFollowing ? 'btn-follow following' : 'btn-follow';
-      const btnText = isFollowing ? '<i class="ti ti-check"></i> Following' : '<i class="ti ti-plus"></i> Follow';
-      const photo = d.clinic_photo_url ? `<img src="${sanitize(d.clinic_photo_url)}" class="clinic-photo">` : '';
-      
+    results.slice(0, 15).forEach(place => {
+      const photoUrl = place.photos && place.photos.length ? place.photos[0].getUrl({maxWidth: 120, maxHeight: 80}) : '';
+      const photoTag = photoUrl ? `<img src="${photoUrl}" style="width:60px;height:60px;border-radius:12px;object-fit:cover;flex-shrink:0;">` : '<div style="width:60px;height:60px;border-radius:12px;background:linear-gradient(135deg,#E6F1FB,#d0e8ff);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-building-hospital" style="font-size:24px;color:var(--blue)"></i></div>';
+      const rating = place.rating ? `<span style="color:#F59E0B;font-weight:700;font-size:13px">⭐ ${place.rating}</span>` : '';
+      let distText = '';
+      if (loc && place.geometry && place.geometry.location) {
+        const d = _calcDist(loc.lat, loc.lng, place.geometry.location.lat(), place.geometry.location.lng());
+        distText = d < 1 ? `${Math.round(d*1000)}m` : `${d.toFixed(1)}km`;
+      }
+      const distBadge = distText ? `<span style="background:#E6F1FB;color:var(--blue);padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap"><i class="ti ti-map-pin"></i> ${distText}</span>` : '';
+
       html += `
-        <div class="doc-card-v2">
-          <div class="doc-top">
-            <div class="doc-avatar">${d.full_name ? d.full_name.split(' ').map(w=>w[0]).join('').slice(0,2) : 'DR'}</div>
-            <div class="doc-info">
-              <div class="doc-name">${sanitize(d.full_name||'Doctor')}</div>
-              <div class="doc-spec">${sanitize(d.specialty||'')}</div>
-            </div>
-            <button class="${btnClass}" onclick="toggleFollow('${d.id}', this)">${btnText}</button>
+        <div class="clinic-card" onclick="showClinicDetails('${place.place_id}')" style="display:flex;gap:12px;padding:14px;background:#fff;border-radius:16px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);cursor:pointer;transition:transform 0.15s ease;">
+          ${photoTag}
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:14px;color:#222;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${sanitize(place.name)}</div>
+            <div style="font-size:12px;color:#888;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><i class="ti ti-map-pin"></i> ${sanitize(place.formatted_address||'')}</div>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">${rating} ${distBadge}</div>
           </div>
-          <div class="doc-meta">
-            <span><i class="ti ti-building-hospital"></i> ${sanitize(d.hospital||'')}</span>
-            <span><i class="ti ti-map-pin"></i> ${sanitize(d.city||'')}</span>
-          </div>
-          ${photo}
-          <div class="doc-actions">
-            <button class="btn btn-purple btn-sm" onclick="openRequest('${d.id}', '${sanitize(d.full_name)}')">Book Appt</button>
-          </div>
-        </div>
-      `;
-    }
+          <div style="display:flex;align-items:center;flex-shrink:0;color:#ccc;"><i class="ti ti-chevron-right" style="font-size:18px"></i></div>
+        </div>`;
+    });
     resDiv.innerHTML = html;
+  });
+}
+
+function showClinicDetails(placeId) {
+  if (!_placesService) return;
+  _placesService.getDetails({placeId, fields: ['name','formatted_address','formatted_phone_number','opening_hours','rating','user_ratings_total','photos','website','url','reviews']}, (place, status) => {
+    if (status !== google.maps.places.PlacesServiceStatus.OK) { showToast('Could not load clinic info.'); return; }
+
+    let photosHtml = '';
+    if (place.photos && place.photos.length) {
+      photosHtml = '<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px;">';
+      place.photos.slice(0, 5).forEach(p => {
+        photosHtml += `<img src="${p.getUrl({maxWidth: 300, maxHeight: 200})}" style="height:140px;border-radius:12px;object-fit:cover;flex-shrink:0;">`;
+      });
+      photosHtml += '</div>';
+    }
+
+    let hoursHtml = '';
+    if (place.opening_hours && place.opening_hours.weekday_text) {
+      const isOpen = place.opening_hours.isOpen ? place.opening_hours.isOpen() : null;
+      const statusBadge = isOpen === true ? '<span style="background:#D1FAE5;color:#059669;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700;">Open Now</span>' : isOpen === false ? '<span style="background:#FEE2E2;color:#DC2626;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700;">Closed</span>' : '';
+      hoursHtml = `<div style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="font-weight:700;font-size:14px;color:#333;">Hours</span>${statusBadge}</div>
+        <div style="font-size:12px;color:#666;line-height:1.8;">${place.opening_hours.weekday_text.join('<br>')}</div>
+      </div>`;
+    }
+
+    let reviewsHtml = '';
+    if (place.reviews && place.reviews.length) {
+      reviewsHtml = '<div style="font-weight:700;font-size:14px;color:#333;margin-bottom:8px;">Reviews</div>';
+      place.reviews.slice(0, 3).forEach(r => {
+        reviewsHtml += `<div style="background:#F9FAFB;padding:10px 12px;border-radius:10px;margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <span style="font-weight:600;font-size:13px;color:#333;">${sanitize(r.author_name)}</span>
+            <span style="color:#F59E0B;font-size:12px;">${'⭐'.repeat(r.rating)}</span>
+          </div>
+          <div style="font-size:12px;color:#666;line-height:1.5;">${sanitize(r.text||'').slice(0,200)}${(r.text||'').length > 200 ? '...' : ''}</div>
+        </div>`;
+      });
+    }
+
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
+    modal.onclick = e => { if (e.target === modal) modal.remove(); };
+    modal.innerHTML = `<div style="background:#fff;border-radius:24px 24px 0 0;max-height:85vh;width:100%;max-width:480px;overflow-y:auto;padding:20px 18px 30px;animation:slideUp .3s ease;">
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:16px;">
+        <div style="flex:1;">
+          <div style="font-size:20px;font-weight:800;color:#222;margin-bottom:4px;">${sanitize(place.name)}</div>
+          <div style="font-size:13px;color:#888;"><i class="ti ti-map-pin"></i> ${sanitize(place.formatted_address||'')}</div>
+        </div>
+        <button onclick="this.closest('div[style*=fixed]').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#999;padding:4px;"><i class="ti ti-x"></i></button>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+        ${place.rating ? `<div style="background:#FFFBEB;padding:6px 14px;border-radius:12px;font-size:14px;font-weight:700;color:#92400E;">⭐ ${place.rating} <span style="font-weight:500;font-size:12px;color:#B45309;">(${place.user_ratings_total||0})</span></div>` : ''}
+        ${place.formatted_phone_number ? `<a href="tel:${place.formatted_phone_number}" style="background:#E8F5E9;padding:6px 14px;border-radius:12px;font-size:13px;font-weight:600;color:#2E7D32;text-decoration:none;"><i class="ti ti-phone"></i> ${place.formatted_phone_number}</a>` : ''}
+        ${place.website ? `<a href="${place.website}" target="_blank" style="background:#E3F2FD;padding:6px 14px;border-radius:12px;font-size:13px;font-weight:600;color:#1565C0;text-decoration:none;"><i class="ti ti-world"></i> Website</a>` : ''}
+      </div>
+
+      ${photosHtml}
+      ${hoursHtml}
+      ${reviewsHtml}
+
+      ${place.url ? `<a href="${place.url}" target="_blank" class="btn btn-teal" style="margin-top:12px;text-decoration:none;display:block;text-align:center;"><i class="ti ti-map"></i> Open in Google Maps</a>` : ''}
+    </div>`;
+    document.body.appendChild(modal);
+  });
 }
 
 async function toggleFollow(docId, btnEl) {

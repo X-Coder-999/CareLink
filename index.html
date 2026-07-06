@@ -204,8 +204,8 @@
     </div>
     <div class="mindmap-node node-left" onclick="pTab('search')">
       <div class="mn-bubble" style="background:linear-gradient(135deg,#E6F1FB,#d0e8ff);color:var(--blue)"><i class="ti ti-search"></i></div>
-      <div class="mn-label">Find Doctor</div>
-      <div class="mn-sub">Search & Follow</div>
+      <div class="mn-label">Connect Doctor</div>
+      <div class="mn-sub">Find clinics nearby</div>
     </div>
   </div>
 
@@ -215,21 +215,20 @@
       <i class="ti ti-calendar-check" style="font-size:22px;color:var(--purple)"></i>
       <div class="dc-label" style="font-size:12px;margin-top:6px">Requests</div>
     </div>
-    <div class="dash-card" style="padding:14px;text-align:center" onclick="pTab('messages')">
-      <i class="ti ti-message-circle" style="font-size:22px;color:var(--amber)"></i>
-      <div class="dc-label" style="font-size:12px;margin-top:6px">Messages</div>
+    <div class="dash-card" style="padding:14px;text-align:center" onclick="pTab('symptom')">
+      <i class="ti ti-brain" style="font-size:22px;color:var(--coral)"></i>
+      <div class="dc-label" style="font-size:12px;margin-top:6px">Symptoms</div>
     </div>
-    <div class="dash-card" style="padding:14px;text-align:center" onclick="pTab('nearby')">
-      <i class="ti ti-map-pin" style="font-size:22px;color:var(--blue)"></i>
-      <div class="dc-label" style="font-size:12px;margin-top:6px">Nearby</div>
+    <div class="dash-card" style="padding:14px;text-align:center" onclick="pTab('records')">
+      <i class="ti ti-file-medical" style="font-size:22px;color:var(--green)"></i>
+      <div class="dc-label" style="font-size:12px;margin-top:6px">Records</div>
     </div>
   </div>
 
   <div class="bottom-nav">
     <div class="bn-item active" onclick="pTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
-    <div class="bn-item" onclick="pTab('search')"><i class="ti ti-search"></i><span>Search</span></div>
+    <div class="bn-item" onclick="pTab('search')"><i class="ti ti-search"></i><span>Connect</span></div>
     <div class="bn-item" onclick="pTab('specialists')"><i class="ti ti-stethoscope"></i><span>Following</span></div>
-    <div class="bn-item" onclick="pTab('messages')"><i class="ti ti-message-circle"></i><span>Messages</span><div class="bn-badge" id="p-msg-badge"></div></div>
     <div class="bn-item" onclick="pTab('profile')"><i class="ti ti-user-circle"></i><span>Profile</span></div>
   </div>
 </div>
@@ -243,10 +242,9 @@
   <div class="section" id="p-notif-list"></div>
   <div class="bottom-nav">
     <div class="bn-item" onclick="pTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
-    <div class="bn-item" onclick="pTab('specialties')"><i class="ti ti-building-hospital"></i><span>Rooms</span></div>
-    <div class="bn-item" onclick="pTab('symptom')"><i class="ti ti-brain"></i><span>Symptoms</span></div>
-    <div class="bn-item" onclick="pTab('messages')"><i class="ti ti-message-circle"></i><span>Messages</span></div>
-    <div class="bn-item" onclick="pTab('records')"><i class="ti ti-file-medical"></i><span>Records</span></div>
+    <div class="bn-item" onclick="pTab('search')"><i class="ti ti-search"></i><span>Connect</span></div>
+    <div class="bn-item" onclick="pTab('specialists')"><i class="ti ti-stethoscope"></i><span>Following</span></div>
+    <div class="bn-item" onclick="pTab('profile')"><i class="ti ti-user-circle"></i><span>Profile</span></div>
   </div>
 </div>
 
@@ -259,10 +257,9 @@
   </div>
   <div class="bottom-nav">
     <div class="bn-item" onclick="pTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
-    <div class="bn-item active" onclick="pTab('specialties')"><i class="ti ti-building-hospital"></i><span>Rooms</span></div>
-    <div class="bn-item" onclick="pTab('symptom')"><i class="ti ti-brain"></i><span>Symptoms</span></div>
-    <div class="bn-item" onclick="pTab('messages')"><i class="ti ti-message-circle"></i><span>Messages</span></div>
-    <div class="bn-item" onclick="pTab('records')"><i class="ti ti-file-medical"></i><span>Records</span></div>
+    <div class="bn-item" onclick="pTab('search')"><i class="ti ti-search"></i><span>Connect</span></div>
+    <div class="bn-item active" onclick="pTab('specialists')"><i class="ti ti-stethoscope"></i><span>Following</span></div>
+    <div class="bn-item" onclick="pTab('profile')"><i class="ti ti-user-circle"></i><span>Profile</span></div>
   </div>
 </div>
 
@@ -275,23 +272,7 @@
   <div class="section"><div id="specialty-docs-list"></div></div>
 </div>
 
-<!-- NEARBY -->
-<div id="s-p-nearby" class="screen">
-  <div class="nav"><div class="nav-title" style="color:var(--blue)"><i class="ti ti-map-pin"></i> Nearby Doctors</div></div>
-  <div class="section">
-    <div class="alert alert-info" id="gps-status"><i class="ti ti-map-pin"></i> Tap below to find doctors near your location</div>
-    <button class="btn btn-teal" id="gps-btn" onclick="findNearby()" style="margin-bottom:1rem"><i class="ti ti-current-location"></i> Use my location</button>
-    <div id="nearby-list" style="display:none;"></div>
-    <div id="map" style="width:100%; height:50vh; border-radius:16px; margin-top:1rem; display:none; box-shadow:0 4px 12px rgba(0,0,0,0.1);"></div>
-  </div>
-  <div class="bottom-nav">
-    <div class="bn-item" onclick="pTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
-    <div class="bn-item active" onclick="pTab('nearby')"><i class="ti ti-map-pin"></i><span>Nearby</span></div>
-    <div class="bn-item" onclick="pTab('symptom')"><i class="ti ti-brain"></i><span>Symptoms</span></div>
-    <div class="bn-item" onclick="pTab('messages')"><i class="ti ti-message-circle"></i><span>Messages</span></div>
-    <div class="bn-item" onclick="pTab('records')"><i class="ti ti-file-medical"></i><span>Records</span></div>
-  </div>
-</div>
+
 
 <!-- REQUEST APPOINTMENT -->
 <div id="s-request-apt" class="screen page">
@@ -322,29 +303,13 @@
   <div class="section" id="my-requests-list"></div>
   <div class="bottom-nav">
     <div class="bn-item" onclick="pTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
-    <div class="bn-item" onclick="pTab('specialties')"><i class="ti ti-building-hospital"></i><span>Rooms</span></div>
-    <div class="bn-item" onclick="pTab('symptom')"><i class="ti ti-brain"></i><span>Symptoms</span></div>
-    <div class="bn-item active" onclick="pTab('messages')"><i class="ti ti-message-circle"></i><span>Messages</span></div>
-    <div class="bn-item" onclick="pTab('records')"><i class="ti ti-file-medical"></i><span>Records</span></div>
+    <div class="bn-item" onclick="pTab('search')"><i class="ti ti-search"></i><span>Connect</span></div>
+    <div class="bn-item" onclick="pTab('specialists')"><i class="ti ti-stethoscope"></i><span>Following</span></div>
+    <div class="bn-item" onclick="pTab('profile')"><i class="ti ti-user-circle"></i><span>Profile</span></div>
   </div>
 </div>
 
-<!-- MESSAGES PATIENT -->
-<div id="s-p-messages" class="screen">
-  <div class="nav"><div class="nav-title" style="color:var(--amber)"><i class="ti ti-message-circle"></i> Messages</div></div>
-  <div class="msg-area" style="display:flex;align-items:center;justify-content:center;height:60vh;flex-direction:column;gap:12px;color:#888;background:#f8f9fa;">
-    <i class="ti ti-message-off" style="font-size:48px;"></i>
-    <div style="font-size:18px;font-weight:600;color:#555;">World Chat Disabled</div>
-    <div style="font-size:14px;text-align:center;max-width:280px;line-height:1.5;">The global community chat has been removed. Private 1-on-1 messaging is coming soon!</div>
-  </div>
-  <div class="bottom-nav">
-    <div class="bn-item" onclick="pTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
-    <div class="bn-item" onclick="pTab('specialties')"><i class="ti ti-building-hospital"></i><span>Rooms</span></div>
-    <div class="bn-item" onclick="pTab('symptom')"><i class="ti ti-brain"></i><span>Symptoms</span></div>
-    <div class="bn-item active" onclick="pTab('messages')"><i class="ti ti-message-circle"></i><span>Messages</span></div>
-    <div class="bn-item" onclick="pTab('records')"><i class="ti ti-file-medical"></i><span>Records</span></div>
-  </div>
-</div>
+
 
 <!-- SYMPTOM CHECKER -->
 <div id="s-p-symptom" class="screen">
@@ -369,10 +334,9 @@
   </div>
   <div class="bottom-nav">
     <div class="bn-item" onclick="pTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
-    <div class="bn-item" onclick="pTab('specialties')"><i class="ti ti-building-hospital"></i><span>Rooms</span></div>
-    <div class="bn-item active" onclick="pTab('symptom')"><i class="ti ti-brain"></i><span>Symptoms</span></div>
-    <div class="bn-item" onclick="pTab('messages')"><i class="ti ti-message-circle"></i><span>Messages</span></div>
-    <div class="bn-item" onclick="pTab('records')"><i class="ti ti-file-medical"></i><span>Records</span></div>
+    <div class="bn-item" onclick="pTab('search')"><i class="ti ti-search"></i><span>Connect</span></div>
+    <div class="bn-item" onclick="pTab('specialists')"><i class="ti ti-stethoscope"></i><span>Following</span></div>
+    <div class="bn-item" onclick="pTab('profile')"><i class="ti ti-user-circle"></i><span>Profile</span></div>
   </div>
 </div>
 
@@ -386,9 +350,8 @@
   <div class="section" id="p-records-content"></div>
   <div class="bottom-nav">
     <div class="bn-item" onclick="pTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
-    <div class="bn-item" onclick="pTab('search')"><i class="ti ti-search"></i><span>Search</span></div>
+    <div class="bn-item" onclick="pTab('search')"><i class="ti ti-search"></i><span>Connect</span></div>
     <div class="bn-item" onclick="pTab('specialists')"><i class="ti ti-stethoscope"></i><span>Following</span></div>
-    <div class="bn-item" onclick="pTab('messages')"><i class="ti ti-message-circle"></i><span>Messages</span></div>
     <div class="bn-item active" onclick="pTab('records')"><i class="ti ti-file-medical"></i><span>Records</span></div>
   </div>
 </div>
@@ -426,9 +389,8 @@
   </div>
   <div class="bottom-nav">
     <div class="bn-item" onclick="pTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
-    <div class="bn-item" onclick="pTab('search')"><i class="ti ti-search"></i><span>Search</span></div>
+    <div class="bn-item" onclick="pTab('search')"><i class="ti ti-search"></i><span>Connect</span></div>
     <div class="bn-item" onclick="pTab('specialists')"><i class="ti ti-stethoscope"></i><span>Following</span></div>
-    <div class="bn-item" onclick="pTab('messages')"><i class="ti ti-message-circle"></i><span>Messages</span></div>
     <div class="bn-item active" onclick="pTab('profile')"><i class="ti ti-user-circle"></i><span>Profile</span></div>
   </div>
 </div>
@@ -447,9 +409,8 @@
   </div>
   <div class="bottom-nav">
     <div class="bn-item" onclick="pTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
-    <div class="bn-item" onclick="pTab('search')"><i class="ti ti-search"></i><span>Search</span></div>
+    <div class="bn-item" onclick="pTab('search')"><i class="ti ti-search"></i><span>Connect</span></div>
     <div class="bn-item active" onclick="pTab('specialists')"><i class="ti ti-stethoscope"></i><span>Following</span></div>
-    <div class="bn-item" onclick="pTab('messages')"><i class="ti ti-message-circle"></i><span>Messages</span></div>
     <div class="bn-item" onclick="pTab('profile')"><i class="ti ti-user-circle"></i><span>Profile</span></div>
   </div>
 </div>
@@ -459,20 +420,20 @@
   <div class="nav">
     <div class="nav-title" style="color:var(--blue);display:flex;align-items:center;gap:8px">
       <button class="nav-btn" onclick="pTab('home')" style="padding:0"><i class="ti ti-arrow-left"></i></button>
-      <span><i class="ti ti-search"></i> Find Doctor</span>
+      <span><i class="ti ti-stethocope"></i> Connect Doctor</span>
     </div>
   </div>
-  <div class="search-bar">
-    <input id="doc-search-input" placeholder="Search by name, specialty, or city..." oninput="searchDoctors()">
+  <div class="search-bar" style="display:flex;gap:8px;padding:12px 1rem 0;">
+    <input id="doc-search-input" style="flex:1" placeholder="Find real-world clinics (e.g. Dentist)..." onkeydown="if(event.key==='Enter')searchClinics()">
+    <button class="btn btn-teal" style="width:auto;padding:0 14px;" onclick="searchClinics()"><i class="ti ti-search"></i></button>
   </div>
   <div class="section" style="padding-top:12px">
-    <div id="search-results"><div style="text-align:center;padding:2rem;color:#888"><i class="ti ti-search" style="font-size:32px;display:block;margin-bottom:8px"></i>Start typing to find doctors<br><span style="font-size:13px">Search by name, specialty, or city</span></div></div>
+    <div id="search-results"><div style="text-align:center;padding:2rem;color:#888"><i class="ti ti-search" style="font-size:32px;display:block;margin-bottom:8px"></i>Search for any clinic near you</div></div>
   </div>
   <div class="bottom-nav">
     <div class="bn-item" onclick="pTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
-    <div class="bn-item active" onclick="pTab('search')"><i class="ti ti-search"></i><span>Search</span></div>
+    <div class="bn-item active" onclick="pTab('search')"><i class="ti ti-search"></i><span>Connect</span></div>
     <div class="bn-item" onclick="pTab('specialists')"><i class="ti ti-stethoscope"></i><span>Following</span></div>
-    <div class="bn-item" onclick="pTab('messages')"><i class="ti ti-message-circle"></i><span>Messages</span></div>
     <div class="bn-item" onclick="pTab('profile')"><i class="ti ti-user-circle"></i><span>Profile</span></div>
   </div>
 </div>
@@ -505,10 +466,7 @@
       <div class="dc-icon" style="background:linear-gradient(135deg,#EEEDFE,#d8d4ff)"><i class="ti ti-clipboard-list" style="color:var(--purple);font-size:22px"></i></div>
       <div class="dc-label">Requests</div><div class="dc-sub">Patient queue</div>
     </div>
-    <div class="dash-card" onclick="dTab('messages')">
-      <div class="dc-icon" style="background:linear-gradient(135deg,#E1F5EE,#c8f0e4)"><i class="ti ti-message-circle" style="color:var(--teal);font-size:22px"></i></div>
-      <div class="dc-label">Messages</div><div class="dc-sub">Chat with patients</div>
-    </div>
+
     <div class="dash-card" onclick="dTab('prescribe')">
       <div class="dc-icon" style="background:linear-gradient(135deg,#EAF3DE,#d4edbc)"><i class="ti ti-prescription" style="color:var(--green);font-size:22px"></i></div>
       <div class="dc-label">Prescriptions</div><div class="dc-sub">Write prescriptions</div>
@@ -530,7 +488,6 @@
     <div class="bn-item active purple" onclick="dTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
     <div class="bn-item" onclick="dTab('requests')"><i class="ti ti-clipboard-list"></i><span>Requests</span><div class="bn-badge" id="d-req-badge"></div></div>
     <div class="bn-item" onclick="dTab('prescribe')"><i class="ti ti-prescription"></i><span>Prescribe</span></div>
-    <div class="bn-item" onclick="dTab('messages')"><i class="ti ti-message-circle"></i><span>Messages</span></div>
     <div class="bn-item" onclick="dTab('profile')"><i class="ti ti-user-circle"></i><span>Profile</span></div>
   </div>
 </div>
@@ -546,7 +503,6 @@
     <div class="bn-item" onclick="dTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
     <div class="bn-item" onclick="dTab('requests')"><i class="ti ti-clipboard-list"></i><span>Requests</span></div>
     <div class="bn-item" onclick="dTab('prescribe')"><i class="ti ti-prescription"></i><span>Prescribe</span></div>
-    <div class="bn-item" onclick="dTab('messages')"><i class="ti ti-message-circle"></i><span>Messages</span></div>
     <div class="bn-item" onclick="dTab('profile')"><i class="ti ti-user-circle"></i><span>Profile</span></div>
   </div>
 </div>
@@ -559,27 +515,11 @@
     <div class="bn-item" onclick="dTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
     <div class="bn-item active purple" onclick="dTab('requests')"><i class="ti ti-clipboard-list"></i><span>Requests</span></div>
     <div class="bn-item" onclick="dTab('prescribe')"><i class="ti ti-prescription"></i><span>Prescribe</span></div>
-    <div class="bn-item" onclick="dTab('messages')"><i class="ti ti-message-circle"></i><span>Messages</span></div>
     <div class="bn-item" onclick="dTab('profile')"><i class="ti ti-user-circle"></i><span>Profile</span></div>
   </div>
 </div>
 
-<!-- MESSAGES DOCTOR -->
-<div id="s-d-messages" class="screen">
-  <div class="nav"><div class="nav-title" style="color:var(--teal)"><i class="ti ti-message-circle"></i> Messages</div></div>
-  <div class="msg-area" style="display:flex;align-items:center;justify-content:center;height:60vh;flex-direction:column;gap:12px;color:#888;background:#f8f9fa;">
-    <i class="ti ti-message-off" style="font-size:48px;"></i>
-    <div style="font-size:18px;font-weight:600;color:#555;">World Chat Disabled</div>
-    <div style="font-size:14px;text-align:center;max-width:280px;line-height:1.5;">The global community chat has been removed. Private 1-on-1 messaging is coming soon!</div>
-  </div>
-  <div class="bottom-nav">
-    <div class="bn-item" onclick="dTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
-    <div class="bn-item" onclick="dTab('requests')"><i class="ti ti-clipboard-list"></i><span>Requests</span></div>
-    <div class="bn-item" onclick="dTab('prescribe')"><i class="ti ti-prescription"></i><span>Prescribe</span></div>
-    <div class="bn-item active purple" onclick="dTab('messages')"><i class="ti ti-message-circle"></i><span>Messages</span></div>
-    <div class="bn-item" onclick="dTab('profile')"><i class="ti ti-user-circle"></i><span>Profile</span></div>
-  </div>
-</div>
+
 
 <!-- WRITE PRESCRIPTION -->
 <div id="s-d-prescribe" class="screen page">
@@ -641,7 +581,6 @@
     <div class="bn-item" onclick="dTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
     <div class="bn-item" onclick="dTab('requests')"><i class="ti ti-clipboard-list"></i><span>Requests</span></div>
     <div class="bn-item" onclick="dTab('prescribe')"><i class="ti ti-prescription"></i><span>Prescribe</span></div>
-    <div class="bn-item" onclick="dTab('messages')"><i class="ti ti-message-circle"></i><span>Messages</span></div>
     <div class="bn-item active purple" onclick="dTab('profile')"><i class="ti ti-user-circle"></i><span>Profile</span></div>
   </div>
 </div>
@@ -664,7 +603,6 @@
     <div class="bn-item" onclick="dTab('home')"><i class="ti ti-home"></i><span>Home</span></div>
     <div class="bn-item" onclick="dTab('requests')"><i class="ti ti-clipboard-list"></i><span>Requests</span></div>
     <div class="bn-item" onclick="dTab('prescribe')"><i class="ti ti-prescription"></i><span>Prescribe</span></div>
-    <div class="bn-item" onclick="dTab('messages')"><i class="ti ti-message-circle"></i><span>Messages</span></div>
     <div class="bn-item active purple" onclick="dTab('profile')"><i class="ti ti-user-circle"></i><span>Profile</span></div>
   </div>
 </div>
